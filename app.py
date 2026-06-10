@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 # Konfigurasi Halaman
-st.set_page_config(page_title="Sistem Dokumentasi Kegiatan", layout="wide")
+st.set_page_config(page_title="Sistem Dokumentasi Privat", layout="wide")
 
 # File Database (CSV)
 DATABASE_FILE = "data_kegiatan.csv"
@@ -40,7 +40,7 @@ def simpan_users(df):
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
-    st.session_state.role = "Publik Belum Login"
+    st.session_state.role = "Belum Login"
 
 # --- SIDEBAR NAVIGASI ---
 st.sidebar.title("🧭 Navigasi")
@@ -50,54 +50,35 @@ if st.session_state.logged_in:
     if st.sidebar.button("Log Out"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.session_state.role = "Publik Belum Login"
+        st.session_state.role = "Belum Login"
         st.rerun()
 else:
-    st.sidebar.info("Status: Belum Login (Publik)")
+    st.sidebar.info("Status: Belum Login")
 
-pilihan_menu = ["Tampilan Publik", "Log In / Daftar Akun"]
-if st.session_state.logged_in and st.session_state.role == "Admin":
-    pilihan_menu.append("Menu Admin (Input Kegiatan)")
-    pilihan_menu.append("Manajemen User (Ubah Role)")
-elif st.session_state.logged_in and st.session_state.role == "User":
-    pilihan_menu.append("Menu User (Akses Khusus)")
+# --- PENGATURAN MENU BERDASARKAN STATUS LOGIN ---
+pilihan_menu = []
+
+if not st.session_state.logged_in:
+    # Jika BELUM login, paksa hanya bisa buka halaman Login/Daftar
+    pilihan_menu = ["Log In / Daftar Akun"]
+else:
+    # Jika SUDAH login, semua role (User & Admin) BISA melihat kegiatan
+    pilihan_menu.append("Daftar & Dokumentasi Kegiatan")
+    
+    # Menu tambahan KHUSUS Admin
+    if st.session_state.role == "Admin":
+        pilihan_menu.append("Menu Admin (Input Kegiatan)")
+        pilihan_menu.append("Manajemen User (Ubah Role)")
 
 menu = st.sidebar.selectbox("Pilih Halaman:", pilihan_menu)
 
-# --- HALAMAN 1: TAMPILAN PUBLIK ---
-if menu == "Tampilan Publik":
-    st.title("🎬 Galeri & Dokumentasi Kegiatan")
-    st.write("Semua orang (Publik & Terdaftar) bisa melihat dokumentasi di bawah ini.")
+# --- HALAMAN 1: LOG IN / DAFTAR AKUN (Halaman Utama saat belum login) ---
+if menu == "Log In / Daftar Akun":
+    st.title("🔐 Akses Masuk Sistem")
+    st.write("Anda harus masuk atau mendaftar akun terlebih dahulu untuk melihat dokumentasi kegiatan.")
     st.markdown("---")
     
-    df_kegiatan = pd.read_csv(DATABASE_FILE)
-    if df_kegiatan.empty:
-        st.info("Belum ada kegiatan yang didokumentasikan.")
-    else:
-        for index, row in df_kegiatan.iterrows():
-            with st.container():
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                     file_path = row["File Dokumentasi"]
-                     # Cek apakah ada file dokumentasi yang tersimpan
-                     if pd.notna(file_path) and os.path.exists(str(file_path)):
-                         if str(file_path).endswith(('.mp4', '.mov', '.avi')):
-                             st.video(str(file_path))
-                         else:
-                             st.image(str(file_path), use_container_width=True)
-                     else:
-                         # Tampilan jika admin memilih tidak mengupload foto/video
-                         st.info("📌 Hanya Catatan Teks (Tanpa Media)")
-                with col2:
-                    st.subheader(row["Nama Kegiatan"])
-                    st.caption(f"📅 Tanggal: {row['Tanggal']} | 🏷️ Kategori: {row['Kategori']}")
-                    st.write(row["Detail"])
-                st.markdown("---")
-
-# --- HALAMAN 2: LOG IN / DAFTAR AKUN ---
-elif menu == "Log In / Daftar Akun":
-    st.title("🔐 Akses Akun Pengguna")
-    tab1, tab2 = st.tabs(["Masuk (Log In)", "Daftar Akun Baru (Publik)"])
+    tab1, tab2 = st.tabs(["Masuk (Log In)", "Daftar Akun Baru"])
     
     with tab1:
         st.subheader("Silakan Log In")
@@ -111,13 +92,13 @@ elif menu == "Log In / Daftar Akun":
                 st.session_state.logged_in = True
                 st.session_state.username = input_user
                 st.session_state.role = user_cocok.iloc[0]['role']
-                st.success(f"Berhasil Login sebagai {st.session_state.username}!")
+                st.success(f"Berhasil Login! Selamat datang {st.session_state.username}.")
                 st.rerun()
             else:
                 st.error("Username atau Password salah!")
                 
     with tab2:
-        st.subheader("Form Pendaftaran User Publik")
+        st.subheader("Form Pendaftaran Akun")
         reg_user = st.text_input("Buat Username (Tanpa Spasi):", key="reg_user")
         reg_gmail = st.text_input("Masukkan Gmail Anda:", key="reg_gmail")
         reg_pass = st.text_input("Buat Password Anda:", type="password", key="reg_pass")
@@ -135,6 +116,34 @@ elif menu == "Log In / Daftar Akun":
             else:
                 st.error("Semua kolom pendaftaran wajib diisi!")
 
+# --- HALAMAN 2: DAFTAR KEGIATAN (Hanya muncul setelah login) ---
+elif menu == "Daftar & Dokumentasi Kegiatan":
+    st.title("🎬 Galeri & Dokumentasi Kegiatan Internal")
+    st.write(f"Logged in sebagai: **{st.session_state.username}** ({st.session_state.role})")
+    st.markdown("---")
+    
+    df_kegiatan = pd.read_csv(DATABASE_FILE)
+    if df_kegiatan.empty:
+        st.info("Belum ada kegiatan yang didokumentasikan saat ini.")
+    else:
+        for index, row in df_kegiatan.iterrows():
+            with st.container():
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                     file_path = row["File Dokumentasi"]
+                     if pd.notna(file_path) and os.path.exists(str(file_path)):
+                         if str(file_path).endswith(('.mp4', '.mov', '.avi')):
+                             st.video(str(file_path))
+                         else:
+                             st.image(str(file_path), use_container_width=True)
+                     else:
+                         st.info("📌 Hanya Catatan Teks (Tanpa Media)")
+                with col2:
+                    st.subheader(row["Nama Kegiatan"])
+                    st.caption(f"📅 Tanggal: {row['Tanggal']} | 🏷️ Kategori: {row['Kategori']}")
+                    st.write(row["Detail"])
+                st.markdown("---")
+
 # --- HALAMAN 3: MENU ADMIN (INPUT KEGIATAN) ---
 elif menu == "Menu Admin (Input Kegiatan)":
     st.title("➕ Tambah Dokumentasi Kegiatan Baru (Akses Admin)")
@@ -144,14 +153,11 @@ elif menu == "Menu Admin (Input Kegiatan)":
         kategori = st.selectbox("Kategori:", ["Kegiatan Utama", "Catatan Harian", "Dokumentasi Project"])
         tanggal = st.date_input("Tanggal Kegiatan:", datetime.now())
         detail = st.text_area("Detail Keterangan Kegiatan:")
-        
-        # Sifatnya opsional sekarang
         uploaded_file = st.file_uploader("Upload Foto/Video Dokumentasi (Boleh Dikosongkan):", type=["png", "jpg", "jpeg", "mp4"])
         
         if st.form_submit_button("Simpan & Publikasikan"):
-            if nama: # Sekarang hanya nama kegiatan yang wajib diisi
-                file_path = "" # Default kosong jika tidak upload file
-                
+            if nama:
+                file_path = ""
                 if uploaded_file is not None:
                     file_path = os.path.join(FOLDER_FOTO, uploaded_file.name)
                     with open(file_path, "wb") as f:
