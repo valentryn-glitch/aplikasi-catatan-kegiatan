@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Sistem Dokumentasi Privat Pro", layout="wide")
 
 # File Database (CSV)
-DATABASE_FILE = "data_kegiatan.csv"
-USER_FILE = "data_users.csv"
+DATABASE_FILE = "data_kegiatan_v2.csv"
+USER_FILE = "data_users_v2.csv"
 FOLDER_FOTO = "saved_images"
 
 # Membuat folder dan file database jika belum ada
