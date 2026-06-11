@@ -12,7 +12,7 @@ st.set_page_config(page_title="Sistem Dokumentasi Privat v14", layout="wide")
 # Set zona waktu resmi ke WIB
 WIB = pytz.timezone('Asia/Jakarta')
 
-# File Database (CSV & TXT)
+# Nama File Database (CSV & TXT)
 DATABASE_FILE = "data_kegiatan_v5.csv"
 USER_FILE = "data_users_v5.csv"
 THEME_FILE = "data_themes.csv"
@@ -22,21 +22,35 @@ FOLDER_UTAMA_MEDIA = "saved_images"
 PATH_FOTO = os.path.join(FOLDER_UTAMA_MEDIA, "Foto")
 PATH_VIDEO = os.path.join(FOLDER_UTAMA_MEDIA, "Video")
 
+# Memastikan folder media tetap ada
 for path in [PATH_FOTO, PATH_VIDEO]:
     if not os.path.exists(path): os.makedirs(path)
     if not os.path.exists(os.path.join(path, "Umum")): os.makedirs(os.path.join(path, "Umum"))
 
-# Inisialisasi CSV Database jika belum ada
-if not os.path.exists(DATABASE_FILE):
+# --- SISTEM PENGAMANAN DATABASE MUTLAK (AGAR DATA TIDAK HILANG SAAT KODE DIUBAH) ---
+# Menggunakan try-except agar jika file sudah ada di server, nilainya tidak akan ditimpa/dihapus oleh kode baru
+
+try:
+    # Coba baca file kegiatan yang sudah ada di server
+    df_cek_kegiatan = pd.read_csv(DATABASE_FILE)
+except Exception:
+    # Jika file benar-benar belum ada (aplikasi baru pertama kali dibuat), baru buat file kosong
     df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Folder", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"])
     df.to_csv(DATABASE_FILE, index=False)
 
-if not os.path.exists(USER_FILE):
+try:
+    # Coba baca file user yang sudah ada di server
+    df_cek_user = pd.read_csv(USER_FILE)
+except Exception:
+    # Jika file user belum ada, buat akun admin bawaan pertama kali
     df_user = pd.DataFrame([{"username": "admin", "email": "admin@email.com", "password": "admin12345", "role": "Admin"}])
     df_user.to_csv(USER_FILE, index=False)
 
-# Inisialisasi Database Tema dengan Tema Bawaan
-if not os.path.exists(THEME_FILE):
+try:
+    # Coba baca file tema yang sudah ada di server
+    df_cek_tema = pd.read_csv(THEME_FILE)
+except Exception:
+    # Jika file tema belum ada, daftarkan tema default sistem
     tema_awal = [
         {"Nama_Tema": "Dark Cyberpunk 🤖", "Bg_Color": "#0e1117", "Sidebar_Color": "#1f2937", "Text_Color": "#00ffcc", "Button_Color": "#ff007f", "Card_Bg": "#111827"},
         {"Nama_Tema": "Light Clean ☀️", "Bg_Color": "#f3f4f6", "Sidebar_Color": "#ffffff", "Text_Color": "#111827", "Button_Color": "#2563eb", "Card_Bg": "#ffffff"},
@@ -49,7 +63,7 @@ if not os.path.exists(STATUS_THEME_FILE):
     with open(STATUS_THEME_FILE, "w", encoding="utf-8") as f:
         f.write("Dark Cyberpunk 🤖")
 
-# --- FUNGSI DATABASE ---
+# --- FUNGSI OPERASIONAL DATABASE ---
 def baca_users(): return pd.read_csv(USER_FILE)
 def simpan_users(df): df.to_csv(USER_FILE, index=False)
 def baca_kegiatan(): return pd.read_csv(DATABASE_FILE)
@@ -138,7 +152,7 @@ KAMUS = {
         "bantuan_pulih": "インスタントアカウント復旧ヘルプ", "info_pulih": "登録済みのGmailを入力してください。システムがアカウントを検索し、自動的にログインページにリダイレクトして情報を自動入力します！",
         "btn_pulih": "アカウントを復旧してログインへ", "err_email_salah": "無効なGmailです！このメールは登録されていません。",
         "pilih_email_dulu": "最初にメールアドレスを入力してください！", "galeri_title": "🎬 アクティブギャラリー＆ノート",
-        "filter_kat": "### 🔍 カテゴリフィルター", "pilih_jenis": "ドキュメント形式の選択:", "semua": "すべて",
+        "filter_kat": "### 🔍 カテゴリフィルター", "pilih_jenis": "ドキュメント形式 of 選択:", "semua": "すべて",
         "catatan_saja": "ノートのみ", "foto": "写真", "video": "動画", "pilih_f_internal": "📁 カテゴリ内のフォルダ選択",
         "semua_folder": "すべてのフォルダ", "kosong": "現在、アクティブなノートはありません。", "sisa_waktu": "⏳ **表示残り時間:**",
         "hari": "日", "jam": "時間", "menit": "分", "hanya_teks": "📌 テキストノートのみ（ファイルなし）",
@@ -154,7 +168,7 @@ KAMUS = {
         "form_daftar": "账户注册表单", "buat_user": "创建用户名 (不含空格):", "masukan_email": "请输入您的 Gmail:",
         "buat_pass": "创建您的密码:", "btn_daftar": "立即注册", "err_user_ada": "该用户名已被注册！",
         "sukses_daftar": "注册成功！请登录。", "wajib_isi": "所有字段均为必填项！",
-        "bantuan_pulih": "即时账户恢复助手", "info_pulih": "输入您注册 the Gmail。系统将查找您的账户，自动跳转至登录页面并为您自动填充凭据！",
+        "bantuan_pulih": "即时账户恢复助手", "info_pulih": "输入您注册的 Gmail。系统将查找您的账户，自动跳转至登录页面并为您自动填充凭据！",
         "btn_pulih": "恢复账户并前往登录", "err_email_salah": "无效的 Gmail！此邮箱未注册。",
         "pilih_email_dulu": "请先输入电子邮箱！", "galeri_title": "🎬 动态画廊与笔记",
         "filter_kat": "### 🔍 分类筛选", "pilih_jenis": "选择文档类型:", "semua": "全部",
@@ -235,7 +249,6 @@ txt = KAMUS.get(st.session_state.bahasa_pilihan, KAMUS["Indonesia"])
 # --- SIDEBAR ATAS: NAVIGASI ---
 st.sidebar.title(txt["navigasi"])
 
-# Pilihan Bahasa di sidebar
 lang_list = list(KAMUS.keys())
 idx_lang = lang_list.index(st.session_state.bahasa_pilihan) if st.session_state.bahasa_pilihan in lang_list else 0
 pilih_lang_manual = st.sidebar.selectbox("🌐 Language / Bahasa:", lang_list, index=idx_lang)
@@ -253,7 +266,7 @@ if nama_tema_wajib not in df_tema_all["Nama_Tema"].values:
 
 data_tema_terpilih = df_tema_all[df_tema_all["Nama_Tema"] == nama_tema_wajib].iloc[0]
 
-# --- SUNTIKAN CSS KUSTOM UNTUK SEMUA HALAMAN ---
+# --- SUNTIKAN CSS KUSTOM UNTUK WARNA GUI ---
 css_kustom = f"""
 <style>
     .stApp {{
@@ -475,7 +488,7 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
 # --- HALAMAN ADMIN LAINNYA ---
 elif menu == txt["menu_2"]:
     st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
-    tab_input, _ = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan"])
+    tab_input, tab_hapus = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan"])
     with tab_input:
         kat_terpilih = st.selectbox("1. Pilih Jenis Kategori Terlebih Dahulu:", ["Catatan saja", "Foto", "Video"])
         with st.form("form_upload_catatan"):
@@ -493,6 +506,16 @@ elif menu == txt["menu_2"]:
                     new_rec = {"ID": str(int(datetime.now(WIB).timestamp())), "Tanggal": datetime.now(WIB).strftime("%Y-%m-%d"), "Nama Kegiatan": nama, "Kategori": kat_terpilih, "Folder": folder_tujuan, "Detail": detail, "File Dokumentasi": file_path, "Waktu_Upload": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"), "Masa_Berlaku_Menit": durasi_jam*60, "Oleh_Admin": st.session_state.username}
                     df_k = baca_kegiatan(); df_k = pd.concat([df_k, pd.DataFrame([new_rec])], ignore_index=True); simpan_kegiatan(df_k)
                     st.success("Sukses di-upload!"); st.rerun()
+                    
+    with tab_hapus:
+        df_hapus = baca_kegiatan()
+        if df_hapus.empty: st.info("Tidak ada catatan untuk dihapus.")
+        else:
+            pilihan_hapus = st.selectbox("Pilih Catatan yang Ingin Dihapus:", df_hapus["Nama Kegiatan"].tolist())
+            if st.button("Hapus Secara Permanen"):
+                df_baru_hapus = df_hapus[df_hapus["Nama Kegiatan"] != pilihan_hapus]
+                simpan_kegiatan(df_baru_hapus)
+                st.success(f"Catatan '{pilihan_hapus}' berhasil dihapus!"); st.rerun()
 
 elif menu == txt["menu_3"]:
     st.title("📁 Manajemen Folder Kategori")
@@ -501,7 +524,7 @@ elif menu == txt["menu_3"]:
     if st.button("Buat Folder"):
         if nama_f:
             os.makedirs(os.path.join(PATH_FOTO if kat_f == "Foto" else PATH_VIDEO, nama_f), exist_ok=True)
-            st.success("Folder dibuat!"); st.rerun()
+            st.success(f"Folder '{nama_f}' berhasil dibuat di kategori {kat_f}!"); st.rerun()
 
 elif menu == txt["menu_4"]:
     st.title("📜 History Semua Catatan")
