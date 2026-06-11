@@ -1,36 +1,22 @@
 import os
 import sys
-import subprocess
-import shutil
-
-# --- AUTO INSTALL & IMPORT PYTZ & ST-JAVASCRIPT ---
-try:
-    import pytz
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pytz"])
-    import pytz
-
-try:
-    from streamlit_javascript import st_javascript
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit-javascript"])
-    from streamlit_javascript import st_javascript
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import pytz
+from streamlit_javascript import st_javascript
 
-# Konfigurasi Halaman
+# Konfigurasi Halaman - Wajib di baris pertama setelah import
 st.set_page_config(page_title="Sistem Dokumentasi Privat v14", layout="wide")
 
 # Set zona waktu resmi ke WIB
 WIB = pytz.timezone('Asia/Jakarta')
 
-# File Database (CSV)
+# File Database (CSV & TXT)
 DATABASE_FILE = "data_kegiatan_v5.csv"
 USER_FILE = "data_users_v5.csv"
 THEME_FILE = "data_themes.csv"
-STATUS_THEME_FILE = "status_theme.txt" # File pencatat tema aktif pilihan admin
+STATUS_THEME_FILE = "status_theme.txt" 
 FOLDER_UTAMA_MEDIA = "saved_images"
 
 PATH_FOTO = os.path.join(FOLDER_UTAMA_MEDIA, "Foto")
@@ -82,7 +68,7 @@ def set_tema_aktif_sistem(nama_tema):
     with open(STATUS_THEME_FILE, "w", encoding="utf-8") as f:
         f.write(nama_tema)
 
-# --- KAMUS MULTI-BAHASA LENGKAP (7 BAHASA TETAP UTUH) ---
+# --- KAMUS MULTI-BAHASA LENGKAP (7 BAHASA UTUH) ---
 KAMUS = {
     "Indonesia": {
         "navigasi": "🧭 Navigasi", "belum_login": "Status: Belum Login", "logout": "Keluar (Log Out)",
@@ -168,7 +154,7 @@ KAMUS = {
         "form_daftar": "账户注册表单", "buat_user": "创建用户名 (不含空格):", "masukan_email": "请输入您的 Gmail:",
         "buat_pass": "创建您的密码:", "btn_daftar": "立即注册", "err_user_ada": "该用户名已被注册！",
         "sukses_daftar": "注册成功！请登录。", "wajib_isi": "所有字段均为必填项！",
-        "bantuan_pulih": "即时账户恢复助手", "info_pulih": "输入您注册的 Gmail。系统将查找您的账户，自动跳转至登录页面并为您自动填充凭据！",
+        "bantuan_pulih": "即时账户恢复助手", "info_pulih": "输入您注册 the Gmail。系统将查找您的账户，自动跳转至登录页面并为您自动填充凭据！",
         "btn_pulih": "恢复账户并前往登录", "err_email_salah": "无效的 Gmail！此邮箱未注册。",
         "pilih_email_dulu": "请先输入电子邮箱！", "galeri_title": "🎬 动态画廊与笔记",
         "filter_kat": "### 🔍 分类筛选", "pilih_jenis": "选择文档类型:", "semua": "全部",
@@ -231,7 +217,8 @@ if "bahasa_pilihan" not in st.session_state:
         elif kode_clean.startswith("th"): st.session_state.bahasa_pilihan = "Thailand (ไทย)"
         elif kode_clean.startswith("tl") or kode_clean.startswith("fil"): st.session_state.bahasa_pilihan = "Philippines (Tagalog)"
         else: st.session_state.bahasa_pilihan = "English"
-    except: st.session_state.bahasa_pilihan = "Indonesia"
+    except:
+        st.session_state.bahasa_pilihan = "Indonesia"
 
 # --- SISTEM LOGIN STATE ---
 if "logged_in" not in st.session_state:
@@ -245,10 +232,10 @@ if "indeks_tab" not in st.session_state: st.session_state.indeks_tab = 0
 
 txt = KAMUS.get(st.session_state.bahasa_pilihan, KAMUS["Indonesia"])
 
-# --- SIDEBAR ATAS: NAVIGASI & EDIT BAHASA (TIDAK ADA DROPDOWN TEMA LAGI DI SINI!) ---
+# --- SIDEBAR ATAS: NAVIGASI ---
 st.sidebar.title(txt["navigasi"])
 
-# Pilihan Bahasa (Tetap ada di sidebar agar user asing bisa membaca)
+# Pilihan Bahasa di sidebar
 lang_list = list(KAMUS.keys())
 idx_lang = lang_list.index(st.session_state.bahasa_pilihan) if st.session_state.bahasa_pilihan in lang_list else 0
 pilih_lang_manual = st.sidebar.selectbox("🌐 Language / Bahasa:", lang_list, index=idx_lang)
@@ -256,18 +243,17 @@ if pilih_lang_manual != st.session_state.bahasa_pilihan:
     st.session_state.bahasa_pilihan = pilih_lang_manual
     st.rerun()
 
-# --- AMBIL TEMA GLOBAL YANG SANGAT DIKONTROL OLEH ADMIN ---
+# --- AMBIL TEMA GLOBAL YANG DIKONTROL OLEH ADMIN ---
 df_tema_all = baca_tema()
 nama_tema_wajib = ambil_tema_aktif_sistem()
 
-# Jika tema yang tersimpan di sistem mendadak tidak ada di database, gunakan index pertama
 if nama_tema_wajib not in df_tema_all["Nama_Tema"].values:
     nama_tema_wajib = df_tema_all["Nama_Tema"].iloc[0]
     set_tema_aktif_sistem(nama_tema_wajib)
 
 data_tema_terpilih = df_tema_all[df_tema_all["Nama_Tema"] == nama_tema_wajib].iloc[0]
 
-# --- SUNTIKAN CSS KUSTOM SECARA MUTLAK UNTUK SEMUA HALAMAN (USER & LOGIN) ---
+# --- SUNTIKAN CSS KUSTOM UNTUK SEMUA HALAMAN ---
 css_kustom = f"""
 <style>
     .stApp {{
@@ -295,7 +281,6 @@ css_kustom = f"""
 </style>
 """
 st.markdown(css_kustom, unsafe_allow_html=True)
-
 st.sidebar.markdown("---")
 
 # --- LOGIN STATUS DI SIDEBAR ---
@@ -316,7 +301,7 @@ else:
     if st.session_state.role == "Admin":
         pilihan_menu.append(txt["menu_2"])
         pilihan_menu.append(txt["menu_3"])
-        pilihan_menu.append(txt["menu_6"]) # Menu Manajemen Tema (Hanya Admin)
+        pilihan_menu.append(txt["menu_6"]) 
         pilihan_menu.append(txt["menu_4"])
         pilihan_menu.append(txt["menu_5"])
 
@@ -431,19 +416,17 @@ elif menu == txt["menu_1"]:
                         st.code(teks_bagikan, language="text")
         if not ada_catatan_aktif: st.info(txt["kosong"])
 
-# --- HALAMAN 6: PUSAT TEMA GUI GLOBAL (HANYA ADMIN YANG PUNYA AKSES KONTROL) ---
+# --- HALAMAN 6: PUSAT TEMA GUI GLOBAL (AKSES ADMIN) ---
 elif menu == txt["menu_6"] and st.session_state.role == "Admin":
     st.title("🎨 Pusat Kontrol Tema GUI Global (Eksklusif Admin)")
     st.write("Di sini Admin mengendalikan penuh warna website untuk semua pengguna secara terpusat.")
     
-    # Bagian 1: Pilih Tema Aktif untuk Seluruh Website
     st.markdown("### 📢 Aktifkan Tema Web Saat Ini")
     df_t_list = baca_tema()
     semua_tema_tersedia = df_t_list["Nama_Tema"].tolist()
     tema_saat_ini = ambil_tema_aktif_sistem()
     
     idx_default_tema = semua_tema_tersedia.index(tema_saat_ini) if tema_saat_ini in semua_tema_tersedia else 0
-    
     pilih_tema_admin = st.selectbox("Pilih tema yang ingin langsung diterapkan di HP/Laptop semua user:", semua_tema_tersedia, index=idx_default_tema)
     
     if st.button("Terapkan Tema ke Seluruh Website 🌍", type="primary"):
@@ -453,7 +436,6 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
         
     st.markdown("---")
     
-    # Bagian 2: Form Pembuatan Tema Kustom oleh Admin
     st.markdown("### ✏️ Desain & Upload Tema Buatan Sendiri")
     with st.form("form_buat_tema", clear_on_submit=True):
         nama_t = st.text_input("Nama Tema Baru (Contoh: Sweet Pink 🌸):")
@@ -471,7 +453,7 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
                     new_theme_data = {"Nama_Tema": nama_t, "Bg_Color": c_bg, "Sidebar_Color": c_side, "Text_Color": c_txt, "Button_Color": c_btn, "Card_Bg": c_card}
                     df_t = pd.concat([df_t, pd.DataFrame([new_theme_data])], ignore_index=True)
                     simpan_tema(df_t)
-                    set_tema_aktif_sistem(nama_t) # Otomatis langsung aktifkan tema baru
+                    set_tema_aktif_sistem(nama_t)
                     st.success(f"Tema '{nama_t}' berhasil disimpan dan langsung diterapkan secara global!")
                     st.rerun()
             else: st.error("Nama Tema wajib diisi!")
