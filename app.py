@@ -4,9 +4,9 @@ import os
 from datetime import datetime, timedelta
 
 # Konfigurasi Halaman
-st.set_page_config(page_title="Sistem Dokumentasi Privat Pro", layout="wide")
+st.set_page_config(page_title="Sistem Dokumentasi Privat Pro v2", layout="wide")
 
-# File Database (CSV)
+# File Database (CSV) - Menggunakan V2 agar terhindar dari error bentrok kolom sebelumnya
 DATABASE_FILE = "data_kegiatan_v2.csv"
 USER_FILE = "data_users_v2.csv"
 FOLDER_FOTO = "saved_images"
@@ -16,8 +16,7 @@ if not os.path.exists(FOLDER_FOTO):
     os.makedirs(FOLDER_FOTO)
 
 if not os.path.exists(DATABASE_FILE):
-    # Menambahkan kolom 'Waktu_Upload' dan 'Masa_Berlaku_Menit' untuk fitur timer
-    df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit"])
+    df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"])
     df.to_csv(DATABASE_FILE, index=False)
 
 if not os.path.exists(USER_FILE):
@@ -66,17 +65,21 @@ pilihan_menu = []
 if not st.session_state.logged_in:
     pilihan_menu = ["Log In / Daftar Akun"]
 else:
-    pilihan_menu.append("Daftar & Dokumentasi Kegiatan")
+    # Siapa pun yang sudah login (User baru maupun Admin) BISA melihat menu utama ini
+    pilihan_menu.append("🎬 Catatan & Dokumentasi Aktif")
+    
+    # Menu khusus ADMIN saja
     if st.session_state.role == "Admin":
-        pilihan_menu.append("Menu Admin (Input & Hapus)")
-        pilihan_menu.append("Manajemen User & Password")
+        pilihan_menu.append("➕ Input & Hapus Catatan")
+        pilihan_menu.append("📜 History Semua Catatan")
+        pilihan_menu.append("👥 Manajemen User & Password")
 
 menu = st.sidebar.selectbox("Pilih Halaman:", pilihan_menu)
 
 # --- HALAMAN 1: LOG IN / DAFTAR AKUN ---
 if menu == "Log In / Daftar Akun":
     st.title("🔐 Akses Masuk Sistem")
-    st.write("Anda harus masuk atau mendaftar akun terlebih dahulu untuk melihat dokumentasi kegiatan.")
+    st.write("Silakan masuk atau daftar akun baru untuk melihat dokumentasi kegiatan.")
     st.markdown("---")
     
     tab1, tab2 = st.tabs(["Masuk (Log In)", "Daftar Akun Baru"])
@@ -99,7 +102,7 @@ if menu == "Log In / Daftar Akun":
                 st.error("Username atau Password salah!")
                 
     with tab2:
-        st.subheader("Form Pendaftaran Akun")
+        st.subheader("Form Pendaftaran Akun (Publik)")
         reg_user = st.text_input("Buat Username (Tanpa Spasi):", key="reg_user")
         reg_gmail = st.text_input("Masukkan Gmail Anda:", key="reg_gmail")
         reg_pass = st.text_input("Buat Password Anda:", type="password", key="reg_pass")
@@ -110,34 +113,34 @@ if menu == "Log In / Daftar Akun":
                 if reg_user in df_users['username'].values:
                     st.error("Username sudah terdaftar! Gunakan nama lain.")
                 else:
+                    # Setiap orang mendaftar otomatis mendapat role 'User' dan BISA langsung melihat catatan aktif setelah login
                     new_user = {"username": reg_user, "email": reg_gmail, "password": reg_pass, "role": "User"}
                     df_users = pd.concat([df_users, pd.DataFrame([new_user])], ignore_index=True)
                     simpan_users(df_users)
-                    st.success("Pendaftaran Berhasil! Silakan log in di tab 'Masuk'.")
+                    st.success("Pendaftaran Berhasil! Silakan masuk menggunakan tab 'Masuk (Log In)'.")
             else:
                 st.error("Semua kolom pendaftaran wajib diisi!")
 
-# --- HALAMAN 2: DAFTAR KEGIATAN (DENGAN ESTIMASI & AUTO HIDDEN TIMER) ---
-elif menu == "Daftar & Dokumentasi Kegiatan":
-    st.title("🎬 Galeri & Dokumentasi Kegiatan Internal")
-    st.write(f"Logged in sebagai: **{st.session_state.username}** ({st.session_state.role})")
+# --- HALAMAN 2: CATATAN AKTIF (Bisa dilihat oleh User baru & Admin selama Timer masih ada) ---
+elif menu == "🎬 Catatan & Dokumentasi Aktif":
+    st.title("🎬 Galeri Kegiatan & Catatan Aktif")
+    st.write(f"Halo **{st.session_state.username}**, berikut adalah catatan kegiatan internal saat ini:")
     st.markdown("---")
     
     df_kegiatan = baca_kegiatan()
     
     if df_kegiatan.empty:
-        st.info("Belum ada kegiatan yang didokumentasikan saat ini.")
+        st.info("Belum ada catatan kegiatan saat ini.")
     else:
         waktu_sekarang = datetime.now()
         ada_catatan_aktif = False
         
         for index, row in df_kegiatan.iterrows():
-            # Mengubah string waktu upload kembali menjadi objek datetime
             waktu_upload = datetime.strptime(row["Waktu_Upload"], "%Y-%m-%d %H:%M:%S")
             masa_berlaku_menit = int(row["Masa_Berlaku_Menit"])
             waktu_kadaluarsa = waktu_upload + timedelta(minutes=masa_berlaku_menit)
             
-            # FITUR FILTER TIMER: Jika waktu sekarang belum melewati batas kadaluarsa, tampilkan!
+            # Tampilkan hanya yang BELUM kadaluarsa
             if waktu_sekarang < waktu_kadaluarsa:
                 ada_catatan_aktif = True
                 sisa_waktu = waktu_kadaluarsa - waktu_sekarang
@@ -157,45 +160,37 @@ elif menu == "Daftar & Dokumentasi Kegiatan":
                              st.info("📌 Hanya Catatan Teks (Tanpa Media)")
                     with col2:
                         st.subheader(row["Nama Kegiatan"])
-                        st.caption(f"📅 Tanggal Kegiatan: {row['Tanggal']} | 🏷️ Kategori: {row['Kategori']}")
-                        
-                        # Menampilkan estimasi sisa waktu tampil ke publik
-                        st.warning(f"⏳ **Estimasi Tampilan Publik:** Catatan ini otomatis hilang dalam **{sisa_jam} Jam {sisa_menit} Menit** lagi. (Akan otomatis hilang pada: {waktu_kadaluarsa.strftime('%H:%M:%S')})")
-                        
+                        st.caption(f"📅 Tanggal: {row['Tanggal']} | 🏷️ Kategori: {row['Kategori']}")
+                        st.warning(f"⏳ **Sisa Waktu Tampil:** {sisa_jam} Jam {sisa_menit} Menit lagi (Hingga: {waktu_kadaluarsa.strftime('%H:%M:%S')})")
                         st.write(row["Detail"])
                     st.markdown("---")
         
         if not ada_catatan_aktif:
-            st.info("Semua catatan kegiatan sebelumnya telah habis masa berlakunya (kadaluarsa) untuk publik.")
+            st.info("Saat ini tidak ada catatan aktif yang bisa dilihat. Semua catatan sebelumnya telah melewati batas durasi tampil publik.")
 
-# --- HALAMAN 3: MENU ADMIN (INPUT & HAPUS KEGIATAN) ---
-elif menu == "Menu Admin (Input & Hapus)":
-    st.title("🛠️ Menu Kontrol Catatan & Kegiatan (Akses Admin)")
-    
-    tab_input, tab_hapus = st.tabs(["➕ Input Catatan Baru", "🗑️ Hapus Catatan"])
+# --- HALAMAN 3: INPUT & HAPUS CATATAN (KHUSUS ADMIN) ---
+elif menu == "➕ Input & Hapus Catatan":
+    st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
+    tab_input, tab_hapus = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan Permanen"])
     
     with tab_input:
         with st.form("form_admin", clear_on_submit=True):
             nama = st.text_input("Nama Kegiatan/Catatan:")
             kategori = st.selectbox("Kategori:", ["Kegiatan Utama", "Catatan Harian", "Dokumentasi Project"])
             tanggal = st.date_input("Tanggal Kegiatan:", datetime.now())
-            detail = st.text_area("Detail Keterangan Kegiatan:")
-            uploaded_file = st.file_uploader("Upload Foto/Video Dokumentasi (Boleh Dikosongkan):", type=["png", "jpg", "jpeg", "mp4"])
+            detail = st.text_area("Detail Keterangan:")
+            uploaded_file = st.file_uploader("Upload Media (Opsional):", type=["png", "jpg", "jpeg", "mp4"])
             
-            st.markdown("### ⏱️ Pengaturan Durasi Tampilan Publik")
-            st.write("Atur berapa lama catatan ini boleh dilihat oleh publik/user setelah di-upload:")
-            col_jam, col_menit = st.columns(2)
-            with col_jam:
-                durasi_jam = st.number_input("Durasi (Jam):", min_value=0, max_value=72, value=1, step=1)
-            with col_menit:
-                durasi_menit = st.number_input("Durasi (Menit):", min_value=0, max_value=59, value=0, step=1)
+            st.markdown("### ⏱️ Durasi Tampilan Publik")
+            col_j, col_m = st.columns(2)
+            with col_j: durasi_jam = st.number_input("Jam:", min_value=0, max_value=72, value=1)
+            with col_m: durasi_menit = st.number_input("Menit:", min_value=0, max_value=59, value=0)
             
-            if st.form_submit_button("Simpan & Publikasikan"):
+            if st.form_submit_button("Publikasikan"):
                 if nama:
-                    # Hitung total durasi dalam menit
                     total_menit = (durasi_jam * 60) + durasi_menit
                     if total_menit == 0:
-                        st.error("Durasi tampilan tidak boleh 0 jam 0 menit!")
+                        st.error("Durasi tidak boleh 0 menit!")
                     else:
                         file_path = ""
                         if uploaded_file is not None:
@@ -207,71 +202,89 @@ elif menu == "Menu Admin (Input & Hapus)":
                         id_unik = str(int(datetime.now().timestamp()))
                         
                         new_data = {
-                            "ID": [id_unik],
-                            "Tanggal": [tanggal.strftime("%Y-%m-%d")],
-                            "Nama Kegiatan": [nama],
-                            "Kategori": [kategori],
-                            "Detail": [detail],
-                            "File Dokumentasi": [file_path],
-                            "Waktu_Upload": [waktu_sekarang_str],
-                            "Masa_Berlaku_Menit": [total_menit]
+                            "ID": [id_unik], "Tanggal": [tanggal.strftime("%Y-%m-%d")],
+                            "Nama Kegiatan": [nama], "Kategori": [kategori], "Detail": [detail],
+                            "File Dokumentasi": [file_path], "Waktu_Upload": [waktu_sekarang_str],
+                            "Masa_Berlaku_Menit": [total_menit], "Oleh_Admin": [st.session_state.username]
                         }
-                        
-                        df_kegiatan = baca_kegiatan()
-                        df_kegiatan = pd.concat([df_kegiatan, pd.DataFrame(new_data)], ignore_index=True)
-                        simpan_kegiatan(df_kegiatan)
-                        st.success(f"Sukses mempublikasikan catatan kegiatan dengan durasi tampil {durasi_jam} jam {durasi_menit} menit!")
+                        df_keg = baca_kegiatan()
+                        df_keg = pd.concat([df_keg, pd.DataFrame(new_data)], ignore_index=True)
+                        simpan_kegiatan(df_keg)
+                        st.success("Catatan berhasil disimpan dan dipublikasikan!")
                         st.rerun()
                 else:
-                    st.error("Nama kegiatan wajib diisi.")
+                    st.error("Nama catatan wajib diisi!")
                     
     with tab_hapus:
-        st.subheader("Hapus Catatan Secara Manual")
-        df_kegiatan = baca_kegiatan()
-        
-        if df_kegiatan.empty:
-            st.info("Tidak ada catatan untuk dihapus.")
+        st.subheader("Hapus dari Database")
+        df_keg = baca_kegiatan()
+        if df_keg.empty:
+            st.info("Database kosong.")
         else:
-            # Membuat list pilihan untuk drop-down hapus data
-            pilihan_hapus = {}
-            for idx, r in df_kegiatan.iterrows():
-                pilihan_hapus[f"{r['Tanggal']} - {r['Nama Kegiatan']} (ID: {r['ID']})"] = r['ID']
-                
-            catatan_dipilih = st.selectbox("Pilih catatan yang ingin dihapus Permanen:", list(pilihan_hapus.keys()))
-            id_hapus = pilihan_hapus[catatan_dipilih]
-            
-            if st.button("Hapus Catatan Sekarang", type="primary"):
-                # Menghapus baris berdasarkan ID yang dipilih
-                df_kegiatan_baru = df_kegiatan[df_kegiatan['ID'].astype(str) != str(id_hapus)]
-                simpan_kegiatan(df_kegiatan_baru)
-                st.success("Catatan tersebut berhasil dihapus dari database!")
+            pilihan_hapus = {f"{r['Tanggal']} - {r['Nama Kegiatan']} (ID: {r['ID']})": r['ID'] for idx, r in df_keg.iterrows()}
+            catatan_dipilih = st.selectbox("Pilih catatan untuk dihapus total:", list(pilihan_hapus.keys()))
+            if st.button("Hapus Permanen", type="primary"):
+                df_keg_baru = df_keg[df_keg['ID'].astype(str) != str(pilihan_hapus[catatan_dipilih])]
+                simpan_kegiatan(df_keg_baru)
+                st.success("Berhasil dihapus dari database!")
                 st.rerun()
 
-# --- HALAMAN 4: MANAJEMEN USER & PASSWORD (PASSWORD TERLIHAT OLEH ADMIN) ---
-elif menu == "Manajemen User & Password":
-    st.title("👥 Halaman Manajemen Pengguna (Akses Admin)")
-    st.write("Di halaman ini Admin dapat mengubah peran akun serta melihat Password pengguna yang terdaftar.")
+# --- HALAMAN 4: HISTORY CATATAN (KHUSUS ADMIN - MELIHAT SEMUA DATA TERMASUK YANG KADALUARSA) ---
+elif menu == "📜 History Semua Catatan":
+    st.title("📜 Riwayat Seluruh Catatan Kegiatan (Akses Admin)")
+    st.write("Halaman ini menampilkan seluruh catatan yang pernah dibuat, termasuk catatan yang timernya sudah habis di halaman user/publik.")
+    st.markdown("---")
     
+    df_kegiatan = baca_kegiatan()
+    
+    if df_kegiatan.empty:
+        st.info("Belum ada riwayat catatan di database.")
+    else:
+        # Menampilkan tabel ringkasan data mentah agar admin mudah memantau
+        st.subheader("📊 Tabel Data Riwayat")
+        st.dataframe(df_kegiatan[["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"]], use_container_width=True)
+        st.markdown("---")
+        
+        # Menampilkan bentuk visual list ke bawah
+        st.subheader("📂 Detail Tampilan Riwayat")
+        waktu_sekarang = datetime.now()
+        
+        for index, row in df_kegiatan.iterrows():
+            waktu_upload = datetime.strptime(row["Waktu_Upload"], "%Y-%m-%d %H:%M:%S")
+            masa_berlaku_menit = int(row["Masa_Berlaku_Menit"])
+            waktu_kadaluarsa = waktu_upload + timedelta(minutes=masa_berlaku_menit)
+            
+            # Cek status untuk label
+            if waktu_sekarang >= waktu_kadaluarsa:
+                status_label = "🔴 KADALUARSA (User biasa tidak bisa lihat lagi)"
+            else:
+                status_label = "🟢 AKTIF (Masih tayang di halaman user)"
+                
+            with st.container():
+                st.markdown(f"### **{row['Nama Kegiatan']}**")
+                st.caption(f"🆔 ID: {row['ID']} | 📅 Tanggal: {row['Tanggal']} | 👤 Diinput Oleh: {row['Oleh_Admin']}")
+                st.info(f"📊 **Status:** {status_label} | 🕒 Di-upload pada: {row['Waktu_Upload']} (Masa Tayang: {row['Masa_Berlaku_Menit']} Menit)")
+                st.write(f"**Isi Catatan:** {row['Detail']}")
+                st.markdown("---")
+
+# --- HALAMAN 5: MANAJEMEN USER & PASSWORD ---
+elif menu == "👥 Manajemen User & Password":
+    st.title("👥 Manajemen Pengguna & Intip Password")
     df_users = baca_users()
-    
-    st.subheader("Daftar User Terdaftar & Password")
-    # Menampilkan tabel lengkap termasuk kolom password asli
     st.dataframe(df_users[["username", "email", "password", "role"]], use_container_width=True)
     
     st.markdown("---")
-    st.subheader("Ubah Peran / Role Akses Pengguna")
+    st.subheader("Ubah Role Akses")
     list_username = df_users["username"].tolist()
-    if "admin" in list_username: 
-        list_username.remove("admin") 
+    if "admin" in list_username: list_username.remove("admin") 
     
     if len(list_username) == 0:
         st.info("Belum ada user lain yang mendaftar.")
     else:
-        pilih_user = st.selectbox("Pilih Username yang ingin diubah rolenya:", list_username)
-        role_baru = st.radio("Pilih Role Akses Baru:", ["User", "Admin"])
-        
-        if st.button("Terapkan Perubahan Role"):
+        pilih_user = st.selectbox("Pilih Username:", list_username)
+        role_baru = st.radio("Pilih Role Baru:", ["User", "Admin"])
+        if st.button("Terapkan Perubahan"):
             df_users.loc[df_users['username'] == pilih_user, 'role'] = role_baru
             simpan_users(df_users)
-            st.success(f"Berhasil! Akun '{pilih_user}' sekarang memiliki hak akses sebagai **{role_baru}**.")
+            st.success(f"Akun '{pilih_user}' sekarang sukses menjadi **{role_baru}**.")
             st.rerun()
