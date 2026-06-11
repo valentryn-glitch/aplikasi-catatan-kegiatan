@@ -28,13 +28,11 @@ for path in [PATH_FOTO, PATH_VIDEO]:
     if not os.path.exists(os.path.join(path, "Umum")): os.makedirs(os.path.join(path, "Umum"))
 
 # --- SISTEM PENGAMANAN DATABASE MUTLAK (AGAR DATA TIDAK HILANG SAAT KODE DIUBAH) ---
-# Menggunakan try-except agar jika file sudah ada di server, nilainya tidak akan ditimpa/dihapus oleh kode baru
-
 try:
     # Coba baca file kegiatan yang sudah ada di server
     df_cek_kegiatan = pd.read_csv(DATABASE_FILE)
 except Exception:
-    # Jika file benar-benar belum ada (aplikasi baru pertama kali dibuat), baru buat file kosong
+    # Jika file belum ada, baru buat file kosong
     df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Folder", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"])
     df.to_csv(DATABASE_FILE, index=False)
 
@@ -320,7 +318,7 @@ else:
 
 menu = st.sidebar.selectbox(txt["pilih_hal"], pilihan_menu)
 
-# --- HALAMAN 1: LOG IN / DAFTAR AKUN ---
+# --- HALAMAN: LOG IN / DAFTAR AKUN ---
 if menu == "Log In / Daftar Akun":
     st.title(txt["menu_akses"])
     pilihan_tab = [txt["tab_masuk"], txt["tab_daftar"], txt["tab_lupa"]]
@@ -369,7 +367,7 @@ if menu == "Log In / Daftar Akun":
                 else: st.error(txt["err_email_salah"])
             else: st.warning(txt["pilih_email_dulu"])
 
-# --- HALAMAN 2: CATATAN AKTIF (USER VIEW) ---
+# --- HALAMAN 1: CATATAN AKTIF (USER VIEW) ---
 elif menu == txt["menu_1"]:
     st.title(txt["galeri_title"])
     df_kegiatan = baca_kegiatan()
@@ -429,6 +427,96 @@ elif menu == txt["menu_1"]:
                         st.code(teks_bagikan, language="text")
         if not ada_catatan_aktif: st.info(txt["kosong"])
 
+# --- HALAMAN 2: INPUT & HAPUS CATATAN (AKSES ADMIN) ---
+elif menu == txt["menu_2"] and st.session_state.role == "Admin":
+    st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
+    tab_input, tab_hapus = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan"])
+    with tab_input:
+        kat_terpilih = st.selectbox("1. Pilih Jenis Kategori Terlebih Dahulu:", ["Catatan saja", "Foto", "Video"])
+        with st.form("form_upload_catatan"):
+            nama = st.text_input("Nama Kegiatan/Catatan:")
+            folder_tujuan = st.selectbox("Folder:", ambil_daftar_folder(kat_terpilih)) if kat_terpilih in ["Foto", "Video"] else "Tidak Butuh Folder"
+            detail = st.text_area("Detail Keterangan:")
+            uploaded_file = st.file_uploader("Upload Media:", type=["png", "jpg", "jpeg", "mp4"])
+            durasi_jam = st.number_input("Durasi Tampil (Jam):", min_value=1, value=24)
+            if st.form_submit_button("Publikasikan"):
+                if nama:
+                    file_path = ""
+                    if uploaded_file is not None:
+                        file_path = os.path.join(FOLDER_UTAMA_MEDIA, kat_terpilih, folder_tujuan, uploaded_file.name)
+                        with open(file_path, "wb") as f: f.write(uploaded_file.getbuffer())
+                    new_rec = {"ID": str(int(datetime.now(WIB).timestamp())), "Tanggal": datetime.now(WIB).strftime("%Y-%m-%d"), "Nama Kegiatan": nama, "Kategori": kat_terpilih, "Folder": folder_tujuan, "Detail": detail, "File Dokumentasi": file_path, "Waktu_Upload": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"), "Masa_Berlaku_Menit": durasi_jam*60, "Oleh_Admin": st.session_state.username}
+                    df_k = baca_kegiatan(); df_k = pd.concat([df_k, pd.DataFrame([new_rec])], ignore_index=True); simpan_kegiatan(df_k)
+                    st.success("Sukses di-upload!"); st.rerun()
+                    
+    with tab_hapus:
+        df_hapus = baca_kegiatan()
+        if df_hapus.empty: st.info("Tidak ada catatan untuk dihapus.")
+        else:
+            pilihan_hapus = st.selectbox("Pilih Catatan yang Ingin Dihapus:", df_hapus["Nama Kegiatan"].tolist())
+            if st.button("Hapus Secara Permanen"):
+                df_baru_hapus = df_hapus[df_hapus["Nama Kegiatan"] != pilihan_hapus]
+                simpan_kegiatan(df_baru_hapus)
+                st.success(f"Catatan '{pilihan_hapus}' berhasil dihapus!"); st.rerun()
+
+# --- HALAMAN 3: MANAJEMEN FOLDER KATEGORI (AKSES ADMIN) ---
+elif menu == txt["menu_3"] and st.session_state.role == "Admin":
+    st.title("📁 Manajemen Folder Kategori")
+    nama_f = st.text_input("Nama Folder Baru:")
+    kat_f = st.selectbox("Kategori:", ["Foto", "Video"])
+    if st.button("Buat Folder"):
+        if nama_f:
+            os.makedirs(os.path.join(PATH_FOTO if kat_f == "Foto" else PATH_VIDEO, nama_f), exist_ok=True)
+            st.success(f"Folder '{nama_f}' berhasil dibuat di kategori {kat_f}!"); st.rerun()
+
+# --- HALAMAN 4: HISTORY SEMUA CATATAN (AKSES ADMIN) ---
+elif menu == txt["menu_4"] and st.session_state.role == "Admin":
+    st.title("📜 History Semua Catatan")
+    st.dataframe(baca_kegiatan(), use_container_width=True)
+
+# --- HALAMAN 5: MANAJEMEN USER & PASSWORD (AKSES ADMIN - EDIT PASSWORD/GMAIL) ---
+elif menu == txt["menu_5"] and st.session_state.role == "Admin":
+    st.title("👥 Manajemen User & Password (Akses Admin)")
+    
+    # Tampilkan Data User Saat Ini
+    df_users = baca_users()
+    st.markdown("### 📋 Daftar Pengguna Terdaftar")
+    st.dataframe(df_users, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # Fitur Utama: Ubah Password, Gmail, atau Role
+    st.markdown("### ✏️ Edit Data Akun (Gmail, Password & Role)")
+    st.write("Pilih username yang ingin diubah datanya di bawah ini:")
+    
+    list_username = df_users["username"].tolist()
+    user_pilihan = st.selectbox("Pilih Username yang Akan Diedit:", list_username)
+    
+    if user_pilihan:
+        data_user_lama = df_users[df_users["username"] == user_pilihan].iloc[0]
+        
+        with st.form("form_edit_user"):
+            st.info(f"Mengedit Akun: **{user_pilihan}**")
+            
+            input_gmail_baru = st.text_input("Ubah Gmail:", value=str(data_user_lama["email"]))
+            input_pass_baru = st.text_input("Ubah Password:", value=str(data_user_lama["password"]))
+            
+            role_sekarang = data_user_lama["role"]
+            idx_role = 0 if role_sekarang == "Admin" else 1
+            input_role_baru = st.selectbox("Ubah Hak Akses (Role):", ["Admin", "User"], index=idx_role)
+            
+            if st.form_submit_button("Simpan Perubahan Akun"):
+                if input_gmail_baru and input_pass_baru:
+                    df_users.loc[df_users["username"] == user_pilihan, "email"] = input_gmail_baru
+                    df_users.loc[df_users["username"] == user_pilihan, "password"] = input_pass_baru
+                    df_users.loc[df_users["username"] == user_pilihan, "role"] = input_role_baru
+                    
+                    simpan_users(df_users)
+                    st.success(f"Sukses! Akun '{user_pilihan}' berhasil diperbarui.")
+                    st.rerun()
+                else:
+                    st.error("Gmail dan Password tidak boleh dikosongkan!")
+
 # --- HALAMAN 6: PUSAT TEMA GUI GLOBAL (AKSES ADMIN) ---
 elif menu == txt["menu_6"] and st.session_state.role == "Admin":
     st.title("🎨 Pusat Kontrol Tema GUI Global (Eksklusif Admin)")
@@ -484,52 +572,3 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
                 df_t_baru = df_t_list[df_t_list["Nama_Tema"] != tema_mau_dihapus]
                 simpan_tema(df_t_baru)
                 st.success("Tema kustom berhasil dihapus!"); st.rerun()
-
-# --- HALAMAN ADMIN LAINNYA ---
-elif menu == txt["menu_2"]:
-    st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
-    tab_input, tab_hapus = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan"])
-    with tab_input:
-        kat_terpilih = st.selectbox("1. Pilih Jenis Kategori Terlebih Dahulu:", ["Catatan saja", "Foto", "Video"])
-        with st.form("form_upload_catatan"):
-            nama = st.text_input("Nama Kegiatan/Catatan:")
-            folder_tujuan = st.selectbox("Folder:", ambil_daftar_folder(kat_terpilih)) if kat_terpilih in ["Foto", "Video"] else "Tidak Butuh Folder"
-            detail = st.text_area("Detail Keterangan:")
-            uploaded_file = st.file_uploader("Upload Media:", type=["png", "jpg", "jpeg", "mp4"])
-            durasi_jam = st.number_input("Durasi Tampil (Jam):", min_value=1, value=24)
-            if st.form_submit_button("Publikasikan"):
-                if nama:
-                    file_path = ""
-                    if uploaded_file is not None:
-                        file_path = os.path.join(FOLDER_UTAMA_MEDIA, kat_terpilih, folder_tujuan, uploaded_file.name)
-                        with open(file_path, "wb") as f: f.write(uploaded_file.getbuffer())
-                    new_rec = {"ID": str(int(datetime.now(WIB).timestamp())), "Tanggal": datetime.now(WIB).strftime("%Y-%m-%d"), "Nama Kegiatan": nama, "Kategori": kat_terpilih, "Folder": folder_tujuan, "Detail": detail, "File Dokumentasi": file_path, "Waktu_Upload": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"), "Masa_Berlaku_Menit": durasi_jam*60, "Oleh_Admin": st.session_state.username}
-                    df_k = baca_kegiatan(); df_k = pd.concat([df_k, pd.DataFrame([new_rec])], ignore_index=True); simpan_kegiatan(df_k)
-                    st.success("Sukses di-upload!"); st.rerun()
-                    
-    with tab_hapus:
-        df_hapus = baca_kegiatan()
-        if df_hapus.empty: st.info("Tidak ada catatan untuk dihapus.")
-        else:
-            pilihan_hapus = st.selectbox("Pilih Catatan yang Ingin Dihapus:", df_hapus["Nama Kegiatan"].tolist())
-            if st.button("Hapus Secara Permanen"):
-                df_baru_hapus = df_hapus[df_hapus["Nama Kegiatan"] != pilihan_hapus]
-                simpan_kegiatan(df_baru_hapus)
-                st.success(f"Catatan '{pilihan_hapus}' berhasil dihapus!"); st.rerun()
-
-elif menu == txt["menu_3"]:
-    st.title("📁 Manajemen Folder Kategori")
-    nama_f = st.text_input("Nama Folder Baru:")
-    kat_f = st.selectbox("Kategori:", ["Foto", "Video"])
-    if st.button("Buat Folder"):
-        if nama_f:
-            os.makedirs(os.path.join(PATH_FOTO if kat_f == "Foto" else PATH_VIDEO, nama_f), exist_ok=True)
-            st.success(f"Folder '{nama_f}' berhasil dibuat di kategori {kat_f}!"); st.rerun()
-
-elif menu == txt["menu_4"]:
-    st.title("📜 History Semua Catatan")
-    st.dataframe(baca_kegiatan(), use_container_width=True)
-
-elif menu == txt["menu_5"]:
-    st.title("👥 Manajemen User & Password")
-    st.dataframe(baca_users(), use_container_width=True)
