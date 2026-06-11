@@ -1,46 +1,237 @@
+import os
+import sys
+import subprocess
+import shutil
+
+# --- AUTO INSTALL & IMPORT PYTZ & ST-JAVASCRIPT ---
+try:
+    import pytz
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pytz"])
+    import pytz
+
+try:
+    from streamlit_javascript import st_javascript
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "streamlit-javascript"])
+    from streamlit_javascript import st_javascript
+
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime, timedelta
 
 # Konfigurasi Halaman
-st.set_page_config(page_title="Sistem Dokumentasi Privat Pro v2", layout="wide")
+st.set_page_config(page_title="Sistem Dokumentasi Privat v14", layout="wide")
 
-# File Database (CSV) - Menggunakan V2 agar terhindar dari error bentrok kolom sebelumnya
-DATABASE_FILE = "data_kegiatan_v2.csv"
-USER_FILE = "data_users_v2.csv"
-FOLDER_FOTO = "saved_images"
+# Set zona waktu resmi ke WIB
+WIB = pytz.timezone('Asia/Jakarta')
 
-# Membuat folder dan file database jika belum ada
-if not os.path.exists(FOLDER_FOTO):
-    os.makedirs(FOLDER_FOTO)
+# File Database (CSV)
+DATABASE_FILE = "data_kegiatan_v5.csv"
+USER_FILE = "data_users_v5.csv"
+THEME_FILE = "data_themes.csv"
+STATUS_THEME_FILE = "status_theme.txt" # File pencatat tema aktif pilihan admin
+FOLDER_UTAMA_MEDIA = "saved_images"
 
+PATH_FOTO = os.path.join(FOLDER_UTAMA_MEDIA, "Foto")
+PATH_VIDEO = os.path.join(FOLDER_UTAMA_MEDIA, "Video")
+
+for path in [PATH_FOTO, PATH_VIDEO]:
+    if not os.path.exists(path): os.makedirs(path)
+    if not os.path.exists(os.path.join(path, "Umum")): os.makedirs(os.path.join(path, "Umum"))
+
+# Inisialisasi CSV Database jika belum ada
 if not os.path.exists(DATABASE_FILE):
-    df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"])
+    df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Folder", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"])
     df.to_csv(DATABASE_FILE, index=False)
 
 if not os.path.exists(USER_FILE):
-    df_user = pd.DataFrame([{
-        "username": "admin",
-        "email": "admin@email.com",
-        "password": "admin12345",
-        "role": "Admin"
-    }])
+    df_user = pd.DataFrame([{"username": "admin", "email": "admin@email.com", "password": "admin12345", "role": "Admin"}])
     df_user.to_csv(USER_FILE, index=False)
 
-# --- FUNGSI DATABASE USER ---
-def baca_users():
-    return pd.read_csv(USER_FILE)
+# Inisialisasi Database Tema dengan Tema Bawaan
+if not os.path.exists(THEME_FILE):
+    tema_awal = [
+        {"Nama_Tema": "Dark Cyberpunk 🤖", "Bg_Color": "#0e1117", "Sidebar_Color": "#1f2937", "Text_Color": "#00ffcc", "Button_Color": "#ff007f", "Card_Bg": "#111827"},
+        {"Nama_Tema": "Light Clean ☀️", "Bg_Color": "#f3f4f6", "Sidebar_Color": "#ffffff", "Text_Color": "#111827", "Button_Color": "#2563eb", "Card_Bg": "#ffffff"},
+        {"Nama_Tema": "Midnight Blue 🌌", "Bg_Color": "#0b132b", "Sidebar_Color": "#1c2541", "Text_Color": "#ffffff", "Button_Color": "#48cae4", "Card_Bg": "#1c2541"},
+        {"Nama_Tema": "Emerald Nature 🌿", "Bg_Color": "#132a13", "Sidebar_Color": "#31572c", "Text_Color": "#ecf39e", "Button_Color": "#90a955", "Card_Bg": "#31572c"}
+    ]
+    pd.DataFrame(tema_awal).to_csv(THEME_FILE, index=False)
 
-def simpan_users(df):
-    df.to_csv(USER_FILE, index=False)
+if not os.path.exists(STATUS_THEME_FILE):
+    with open(STATUS_THEME_FILE, "w", encoding="utf-8") as f:
+        f.write("Dark Cyberpunk 🤖")
 
-# --- FUNGSI DATABASE KEGIATAN ---
-def baca_kegiatan():
-    return pd.read_csv(DATABASE_FILE)
+# --- FUNGSI DATABASE ---
+def baca_users(): return pd.read_csv(USER_FILE)
+def simpan_users(df): df.to_csv(USER_FILE, index=False)
+def baca_kegiatan(): return pd.read_csv(DATABASE_FILE)
+def simpan_kegiatan(df): df.to_csv(DATABASE_FILE, index=False)
+def baca_tema(): return pd.read_csv(THEME_FILE)
+def simpan_tema(df): df.to_csv(THEME_FILE, index=False)
+def ambil_daftar_folder(kategori):
+    path_base = PATH_FOTO if kategori == "Foto" else PATH_VIDEO
+    return [f for f in os.listdir(path_base) if os.path.isdir(os.path.join(path_base, f))]
 
-def simpan_kegiatan(df):
-    df.to_csv(DATABASE_FILE, index=False)
+def ambil_tema_aktif_sistem():
+    with open(STATUS_THEME_FILE, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+def set_tema_aktif_sistem(nama_tema):
+    with open(STATUS_THEME_FILE, "w", encoding="utf-8") as f:
+        f.write(nama_tema)
+
+# --- KAMUS MULTI-BAHASA LENGKAP (7 BAHASA TETAP UTUH) ---
+KAMUS = {
+    "Indonesia": {
+        "navigasi": "🧭 Navigasi", "belum_login": "Status: Belum Login", "logout": "Keluar (Log Out)",
+        "menu_akses": "🔐 Akses Masuk Sistem", "pilih_menu": "Pilih Menu Akses:", "tab_masuk": "Masuk (Log In)",
+        "tab_daftar": "Daftar Akun Baru", "tab_lupa": "🔑 Lupa Akun / Password", "username": "Username:",
+        "password": "Password:", "btn_masuk": "Log In", "err_login": "Username atau Password salah!",
+        "form_daftar": "Form Pendaftaran Akun", "buat_user": "Buat Username (Tanpa Spasi):", "masukan_email": "Masukkan Gmail Anda:",
+        "buat_pass": "Buat Password Anda:", "btn_daftar": "Daftar Sekarang", "err_user_ada": "Username sudah terdaftar!",
+        "sukses_daftar": "Pendaftaran Berhasil! Silakan log in.", "wajib_isi": "Semua kolom wajib diisi!",
+        "bantuan_pulih": "Bantuan Pemulihan Akun Instan", "info_pulih": "Masukkan Gmail terdaftar Anda. Sistem akan mencari akun Anda lalu memindahkan Anda ke halaman login dan mengisi datanya secara otomatis!",
+        "btn_pulih": "Pulihkan Akun & Pindah ke Log In", "err_email_salah": "Gmail tidak valid! Email tersebut belum terdaftar.",
+        "pilih_email_dulu": "Harap masukkan email terlebih dahulu!", "galeri_title": "🎬 Galeri Kegiatan & Catatan Aktif",
+        "filter_kat": "### 🔍 Filter Kategori", "pilih_jenis": "Pilih Jenis Dokumentasi:", "semua": "Semua",
+        "catatan_saja": "Catatan saja", "foto": "Foto", "video": "Video", "pilih_f_internal": "📁 Pilih Folder di dalam Kategori",
+        "semua_folder": "Semua Folder", "kosong": "Belum ada catatan kegiatan saat ini.", "sisa_waktu": "⏳ **Sisa Waktu Tampil:**",
+        "hari": "Hari", "jam": "Jam", "menit": "Menit", "hanya_teks": "📌 Hanya Catatan Teks (Tidak Ada File)",
+        "salin_share": "##### 🔗 Salin Catatan untuk Di-share:", "tanggal": "Tanggal", "detail": "Detail Keterangan",
+        "menu_1": "🎬 Catatan & Dokumentasi Aktif", "menu_2": "➕ Input & Hapus Catatan", "menu_3": "📁 Manajemen Folder Kategori",
+        "menu_4": "📜 History Semua Catatan", "menu_5": "👥 Manajemen User & Password", "menu_6": "🎨 Pusat Tema GUI Global (Admin)", "pilih_hal": "Pilih Halaman:"
+    },
+    "English": {
+        "navigasi": "🧭 Navigation", "belum_login": "Status: Not Logged In", "logout": "Log Out",
+        "menu_akses": "🔐 System Entry Access", "pilih_menu": "Select Access Menu:", "tab_masuk": "Log In",
+        "tab_daftar": "Register New Account", "tab_lupa": "🔑 Forgot Username / Password", "username": "Username:",
+        "password": "Password:", "btn_masuk": "Log In", "err_login": "Incorrect Username or Password!",
+        "form_daftar": "Account Registration Form", "buat_user": "Create Username (No Spaces):", "masukan_email": "Enter Your Gmail:",
+        "buat_pass": "Create Your Password:", "btn_daftar": "Register Now", "err_user_ada": "Username is already registered!",
+        "sukses_daftar": "Registration Successful! Please log in.", "wajib_isi": "All fields are required!",
+        "bantuan_pulih": "Instant Account Recovery Help", "info_pulih": "Enter your registered Gmail. The system will look up your account, automatically redirect you to the login page, and autofill your credentials!",
+        "btn_pulih": "Recover Account & Go to Log In", "err_email_salah": "Invalid Gmail! This email is not registered.",
+        "pilih_email_dulu": "Please enter your email first!", "galeri_title": "🎬 Active Gallery & Notes",
+        "filter_kat": "### 🔍 Category Filter", "pilih_jenis": "Select Documentation Type:", "semua": "All",
+        "catatan_saja": "Notes only", "foto": "Photos", "video": "Videos", "pilih_f_internal": "📁 Select Folder inside Category",
+        "semua_folder": "All Folders", "kosong": "No active notes available at the moment.", "sisa_waktu": "⏳ **Remaining Display Time:**",
+        "hari": "Days", "jam": "Hours", "menit": "Minutes", "hanya_teks": "📌 Text Note Only (No File Attached)",
+        "salin_share": "##### 🔗 Copy Note to Share:", "tanggal": "Date", "detail": "Detail Description",
+        "menu_1": "🎬 Active Gallery & Notes", "menu_2": "➕ Input & Delete Notes", "menu_3": "📁 Folder Management",
+        "menu_4": "📜 All Notes History", "menu_5": "👥 User & Password Management", "menu_6": "🎨 GUI Global Themes (Admin)", "pilih_hal": "Select Page:"
+    },
+    "Korea (한국어)": {
+        "navigasi": "🧭 탐색", "belum_login": "상태: 로그인하지 않음", "logout": "로그아웃",
+        "menu_akses": "🔐 시스템 로그인", "pilih_menu": "접근 메뉴 선택:", "tab_masuk": "로그인",
+        "tab_daftar": "새 계정 등록", "tab_lupa": "🔑 아이디 / 비밀번호 찾기", "username": "사용자 이름:",
+        "password": "비밀번호:", "btn_masuk": "로그인", "err_login": "사용자 이름 또는 비밀번호가 틀렸습니다!",
+        "form_daftar": "회원가입 양식", "buat_user": "사용자 이름 생성 (공백 없음):", "masukan_email": "Gmail 입력:",
+        "buat_pass": "비밀번호 생성:", "btn_daftar": "지금 가입하기", "err_user_ada": "이미 등록된 사용자 이름입니다!",
+        "sukses_daftar": "등록 완료! 로그인해주세요.", "wajib_isi": "모든 필드를 채워야 합니다!",
+        "bantuan_pulih": "실시간 계정 복구 지원", "info_pulih": "등록된 Gmail을 입력하세요. 시스템이 계정을 찾아 자동으로 로그인 페이지로 이동하고 자격 증명을 자동 완성합니다!",
+        "btn_pulih": "계정 복구 및 로그인 페이지로 이동", "err_email_salah": "잘못된 Gmail입니다! 등록되지 않은 이메일입니다.",
+        "pilih_email_dulu": "먼저 이메일을 입력하세요!", "galeri_title": "🎬 활성 갤러리 및 노트",
+        "filter_kat": "### 🔍 카테고리 필터", "pilih_jenis": "문서 유형 선택:", "semua": "전체",
+        "catatan_saja": "노트만", "foto": "사진", "video": "동영상", "pilih_f_internal": "📁 카테고리 내부 폴더 선택",
+        "semua_folder": "모든 폴더", "kosong": "현재 활성화된 노트가 없습니다.", "sisa_waktu": "⏳ **남은 표시 시간:**",
+        "hari": "일", "jam": "시간", "menit": "분", "hanya_teks": "📌 텍스트 노트 전용 (파일 없음)",
+        "salin_share": "##### 🔗 공유할 노트 복사:", "tanggal": "날짜", "detail": "상세 설명",
+        "menu_1": "🎬 활성 갤러리 및 노트", "menu_2": "➕ 노트 입력 및 삭제", "menu_3": "📁 폴더 관리",
+        "menu_4": "📜 모든 노트 기록", "menu_5": "👥 사용자 및 비밀번호 관리", "menu_6": "🎨 GUI 글로벌 테마 (관리자)", "pilih_hal": "페이지 선택:"
+    },
+    "Jepang (日本語)": {
+        "navigasi": "🧭 ナビゲーション", "belum_login": "ステータス: 未ログイン", "logout": "ログアウト",
+        "menu_akses": "🔐 システムログイン", "pilih_menu": "アクセスメニューの選択:", "tab_masuk": "ログイン",
+        "tab_daftar": "新規アカウント登録", "tab_lupa": "🔑 ユーザー名・パスワードを忘れた場合", "username": "ユーザー名:",
+        "password": "パスワード:", "btn_masuk": "ログイン", "err_login": "ユーザー名またはパスワードが正しくありません！",
+        "form_daftar": "アカウント登録フォーム", "buat_user": "ユーザー名作成（スペースなし）:", "masukan_email": "Gmailを入力してください:",
+        "buat_pass": "パスワード作成:", "btn_daftar": "今すぐ登録", "err_user_ada": "このユーザー名は既に登録されています！",
+        "sukses_daftar": "登録が完了しました！ログインしてください。", "wajib_isi": "すべての項目が必須です！",
+        "bantuan_pulih": "インスタントアカウント復旧ヘルプ", "info_pulih": "登録済みのGmailを入力してください。システムがアカウントを検索し、自動的にログインページにリダイレクトして情報を自動入力します！",
+        "btn_pulih": "アカウントを復旧してログインへ", "err_email_salah": "無効なGmailです！このメールは登録されていません。",
+        "pilih_email_dulu": "最初にメールアドレスを入力してください！", "galeri_title": "🎬 アクティブギャラリー＆ノート",
+        "filter_kat": "### 🔍 カテゴリフィルター", "pilih_jenis": "ドキュメント形式の選択:", "semua": "すべて",
+        "catatan_saja": "ノートのみ", "foto": "写真", "video": "動画", "pilih_f_internal": "📁 カテゴリ内のフォルダ選択",
+        "semua_folder": "すべてのフォルダ", "kosong": "現在、アクティブなノートはありません。", "sisa_waktu": "⏳ **表示残り時間:**",
+        "hari": "日", "jam": "時間", "menit": "分", "hanya_teks": "📌 テキストノートのみ（ファイルなし）",
+        "salin_share": "##### 🔗 共有用ノートをコピー:", "tanggal": "日付", "detail": "詳細説明",
+        "menu_1": "🎬 アクティブギャラリー＆ノート", "menu_2": "➕ ノートの追加・削除", "menu_3": "📁 フォルダ管理",
+        "menu_4": "📜 すべてのノート履歴", "menu_5": "👥 ユーザー＆パスワード管理", "menu_6": "🎨 GUI グローバルテーマ (管理者)", "pilih_hal": "ページ選択:"
+    },
+    "China (中文)": {
+        "navigasi": "🧭 导航栏", "belum_login": "状态: 未登录", "logout": "退出登录",
+        "menu_akses": "🔐 系统登录访问", "pilih_menu": "选择访问菜单:", "tab_masuk": "登录",
+        "tab_daftar": "注册新账户", "tab_lupa": "🔑 忘记用户名 / 密码", "username": "用户名:",
+        "password": "密码:", "btn_masuk": "登录", "err_login": "用户名或密码错误！",
+        "form_daftar": "账户注册表单", "buat_user": "创建用户名 (不含空格):", "masukan_email": "请输入您的 Gmail:",
+        "buat_pass": "创建您的密码:", "btn_daftar": "立即注册", "err_user_ada": "该用户名已被注册！",
+        "sukses_daftar": "注册成功！请登录。", "wajib_isi": "所有字段均为必填项！",
+        "bantuan_pulih": "即时账户恢复助手", "info_pulih": "输入您注册的 Gmail。系统将查找您的账户，自动跳转至登录页面并为您自动填充凭据！",
+        "btn_pulih": "恢复账户并前往登录", "err_email_salah": "无效的 Gmail！此邮箱未注册。",
+        "pilih_email_dulu": "请先输入电子邮箱！", "galeri_title": "🎬 动态画廊与笔记",
+        "filter_kat": "### 🔍 分类筛选", "pilih_jenis": "选择文档类型:", "semua": "全部",
+        "catatan_saja": "仅限笔记", "foto": "照片", "video": "视频", "pilih_f_internal": "📁 选择分类下的文件夹",
+        "semua_folder": "所有文件夹", "kosong": "目前没有有效的笔记内容。", "sisa_waktu": "⏳ **剩余显示时间:**",
+        "hari": "天", "jam": "小时", "menit": "分钟", "hanya_teks": "📌 仅限文本笔记 (未附加文件)",
+        "salin_share": "##### 🔗 复制笔记以分享:", "tanggal": "日期", "detail": "详细描述",
+        "menu_1": "🎬 动态画廊与笔记", "menu_2": "➕ 添加与删除笔记", "menu_3": "📁 文件夹管理",
+        "menu_4": "📜 所有笔记历史", "menu_5": "👥 用户与密码管理", "menu_6": "🎨 全局主题管理 (管理员)", "pilih_hal": "选择页面:"
+    },
+    "Thailand (ไทย)": {
+        "navigasi": "🧭 แถบนำทาง", "belum_login": "สถานะ: ยังไม่ได้ล็อกอิน", "logout": "ออกจากระบบ",
+        "menu_akses": "🔐 เข้าสู่ระบบ", "pilih_menu": "เลือกเมนูเข้าใช้งาน:", "tab_masuk": "ล็อกอิน",
+        "tab_daftar": "ลงทะเบียนบัญชีใหม่", "tab_lupa": "🔑 ลืมชื่อผู้ใช้ / รหัสผ่าน", "username": "ชื่อผู้ใช้:",
+        "password": "รหัสผ่าน:", "btn_masuk": "เข้าสู่ระบบ", "err_login": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!",
+        "form_daftar": "แบบฟอร์มลงทะเบียน", "buat_user": "สร้างชื่อผู้ใช้ (ห้ามเว้นวรรค):", "masukan_email": "กรอก Gmail ของคุณ:",
+        "buat_pass": "สร้างรหัสผ่านของคุณ:", "btn_daftar": "ลงทะเบียนตอนนี้", "err_user_ada": "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว!",
+        "sukses_daftar": "ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ", "wajib_isi": "กรุณากรอกข้อมูลให้ครบทุกช่อง!",
+        "bantuan_pulih": "ระบบกู้คืนบัญชีด่วน", "info_pulih": "กรอก Gmail ที่ลงทะเบียนไว้ ระบบจะค้นหาบัญชีของคุณ ย้ายกลับไปที่หน้าล็อกอิน และกรอกข้อมูลให้โดยอัตนัยทันที!",
+        "btn_pulih": "กู้คืนบัญชี & ไปที่หน้าล็อกอิน", "err_email_salah": "Gmail ไม่ถูกต้อง! ไม่พบอีเมลนี้ในระบบ",
+        "pilih_email_dulu": "กรุณากรอกอีเมลก่อน!", "galeri_title": "🎬 แกลเลอรีและบันทึกกิจกรรม",
+        "filter_kat": "### 🔍 ตัวกรองหมวดหมู่", "pilih_jenis": "เลือกประเภทเอกสาร:", "semua": "ทั้งหมด",
+        "catatan_saja": "เฉพาะบันทึกข้อความ", "foto": "รูปภาพ", "video": "วิดีโอ", "pilih_f_internal": "📁 เลือกโฟลเดอร์ในหมวดหมู่",
+        "semua_folder": "ทุกโฟลเดอร์", "kosong": "ไม่มีบันทึกกิจกรรมในขณะนี้", "sisa_waktu": "⏳ **เวลาที่เหลือในการแสดง:**",
+        "hari": "วัน", "jam": "ชั่วโมง", "menit": "นาที", "hanya_teks": "📌 เฉพาะบันทึกข้อความ (ไม่มีไฟล์แนบ)",
+        "salin_share": "##### 🔗 คัดลอกข้อความเพื่อแชร์:", "tanggal": "วันที่", "detail": "รายละเอียด",
+        "menu_1": "🎬 แกลเลอรีและบันทึกกิจกรรม", "menu_2": "➕ เพิ่มและลบบันทึก", "menu_3": "📁 จัดการโฟลเดอร์",
+        "menu_4": "📜 ประวัติบันทึกทั้งหมด", "menu_5": "👥 จัดการผู้ใช้งาน & รหัสผ่าน", "menu_6": "🎨 ปรับแต่งธีมแผงควบคุม (ผู้ดูแล)", "pilih_hal": "เลือกหน้า:"
+    },
+    "Philippines (Tagalog)": {
+        "navigasi": "🧭 Nabigasyon", "belum_login": "Status: Hindi pa Naka-log in", "logout": "Mag-log Out",
+        "menu_akses": "🔐 Access sa System", "pilih_menu": "Pumili ng Menu:", "tab_masuk": "Mag-log In",
+        "tab_daftar": "Magrehistro ng Bagong Account", "tab_lupa": "🔑 Nakalimutan ang Username / Password", "username": "Username:",
+        "password": "Password:", "btn_masuk": "Mag-log In", "err_login": "Maling Username o Password!",
+        "form_daftar": "Form ng Pagpaparehistro", "buat_user": "Gumawa ng Username (Walang Espasyo):", "masukan_email": "Ilagay ang iyong Gmail:",
+        "buat_pass": "Gumawa ng iyong Password:", "btn_daftar": "Magrehistro Ngayon", "err_user_ada": "Ang Username ay nakarehistro na!",
+        "sukses_daftar": "Matagumpay ang pagpaparehistro! Mangyaring mag-log in.", "wajib_isi": "Lahat ng patlang ay kinakailangan!",
+        "bantuan_pulih": "Tulong sa Instant na Pagbawi ng Account", "info_pulih": "Ilagay ang iyong nakarehistrong Gmail. Hahanapin ng system ang iyong account, awtomatikong ire-redirect ka sa login page, at i-autofill ang iyong mga kredensyal!",
+        "btn_pulih": "Bawiin ang Account & Pumunta sa Log In", "err_email_salah": "Di-wastong Gmail! Ang email na ito ay hindi nakarehistro.",
+        "pilih_email_dulu": "Mangyaring ilagay muna ang iyong email!", "galeri_title": "🎬 Aktibong Gallery at mga Tala",
+        "filter_kat": "### 🔍 Filter ng Kategorya", "pilih_jenis": "Pumili ng Uri ng Dokumentasyon:", "semua": "Lahat",
+        "catatan_saja": "Mga Tala lamang", "foto": "Mga Larawan", "video": "Mga Video", "pilih_f_internal": "📁 Pumili ng Folder sa loob ng Kategorya",
+        "semua_folder": "Lahat ng Folder", "kosong": "Walang aktibong mga tala sa kasalukuyan.", "sisa_waktu": "⏳ **Natitirang Oras ng Display:**",
+        "hari": "Araw", "jam": "Oras", "menit": "Minuto", "hanya_teks": "📌 Tala ng Teksto Lamang (Walang File)",
+        "salin_share": "##### 🔗 Kopyahin ang Tala para Ibahagi:", "tanggal": "Petsa", "detail": "Detalyadong Paglalarawan",
+        "menu_1": "🎬 Aktibong Gallery at mga Tala", "menu_2": "➕ Magdagdag at Magbura ng Tala", "menu_3": "📁 Pamamahala ng Folder",
+        "menu_4": "📜 Kasaysayan ng Lahat ng Tala", "menu_5": "👥 Pamamahala ng User at Password", "menu_6": "🎨 Pamamahala ng Tema (Admin)", "pilih_hal": "Pumili ng Pahina:"
+    }
+}
+
+# --- DETEKSI BAHASA OTOMATIS BERDASARKAN DEVICE ---
+if "bahasa_pilihan" not in st.session_state:
+    try:
+        kode_lang = st_javascript("navigator.language || navigator.userLanguage;")
+        kode_clean = str(kode_lang).lower()
+        if kode_clean.startswith("id"): st.session_state.bahasa_pilihan = "Indonesia"
+        elif kode_clean.startswith("ko"): st.session_state.bahasa_pilihan = "Korea (한국어)"
+        elif kode_clean.startswith("ja"): st.session_state.bahasa_pilihan = "Jepang (日本語)"
+        elif kode_clean.startswith("zh"): st.session_state.bahasa_pilihan = "China (中文)"
+        elif kode_clean.startswith("th"): st.session_state.bahasa_pilihan = "Thailand (ไทย)"
+        elif kode_clean.startswith("tl") or kode_clean.startswith("fil"): st.session_state.bahasa_pilihan = "Philippines (Tagalog)"
+        else: st.session_state.bahasa_pilihan = "English"
+    except: st.session_state.bahasa_pilihan = "Indonesia"
 
 # --- SISTEM LOGIN STATE ---
 if "logged_in" not in st.session_state:
@@ -48,243 +239,292 @@ if "logged_in" not in st.session_state:
     st.session_state.username = ""
     st.session_state.role = "Belum Login"
 
-# --- SIDEBAR NAVIGASI ---
-st.sidebar.title("🧭 Navigasi")
+if "autofill_user" not in st.session_state: st.session_state.autofill_user = ""
+if "autofill_pass" not in st.session_state: st.session_state.autofill_pass = ""
+if "indeks_tab" not in st.session_state: st.session_state.indeks_tab = 0
 
+txt = KAMUS.get(st.session_state.bahasa_pilihan, KAMUS["Indonesia"])
+
+# --- SIDEBAR ATAS: NAVIGASI & EDIT BAHASA (TIDAK ADA DROPDOWN TEMA LAGI DI SINI!) ---
+st.sidebar.title(txt["navigasi"])
+
+# Pilihan Bahasa (Tetap ada di sidebar agar user asing bisa membaca)
+lang_list = list(KAMUS.keys())
+idx_lang = lang_list.index(st.session_state.bahasa_pilihan) if st.session_state.bahasa_pilihan in lang_list else 0
+pilih_lang_manual = st.sidebar.selectbox("🌐 Language / Bahasa:", lang_list, index=idx_lang)
+if pilih_lang_manual != st.session_state.bahasa_pilihan:
+    st.session_state.bahasa_pilihan = pilih_lang_manual
+    st.rerun()
+
+# --- AMBIL TEMA GLOBAL YANG SANGAT DIKONTROL OLEH ADMIN ---
+df_tema_all = baca_tema()
+nama_tema_wajib = ambil_tema_aktif_sistem()
+
+# Jika tema yang tersimpan di sistem mendadak tidak ada di database, gunakan index pertama
+if nama_tema_wajib not in df_tema_all["Nama_Tema"].values:
+    nama_tema_wajib = df_tema_all["Nama_Tema"].iloc[0]
+    set_tema_aktif_sistem(nama_tema_wajib)
+
+data_tema_terpilih = df_tema_all[df_tema_all["Nama_Tema"] == nama_tema_wajib].iloc[0]
+
+# --- SUNTIKAN CSS KUSTOM SECARA MUTLAK UNTUK SEMUA HALAMAN (USER & LOGIN) ---
+css_kustom = f"""
+<style>
+    .stApp {{
+        background-color: {data_tema_terpilih['Bg_Color']} !important;
+        color: {data_tema_terpilih['Text_Color']} !important;
+    }}
+    [data-testid="stSidebar"] {{
+        background-color: {data_tema_terpilih['Sidebar_Color']} !important;
+    }}
+    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, span, .stRadio label {{
+        color: {data_tema_terpilih['Text_Color']} !important;
+    }}
+    button[kind="secondary"], button[kind="primary"] {{
+        background-color: {data_tema_terpilih['Button_Color']} !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+        border: none !important;
+    }}
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        background-color: {data_tema_terpilih['Card_Bg']} !important;
+        border: 1px solid {data_tema_terpilih['Button_Color']} !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+    }}
+</style>
+"""
+st.markdown(css_kustom, unsafe_allow_html=True)
+
+st.sidebar.markdown("---")
+
+# --- LOGIN STATUS DI SIDEBAR ---
 if st.session_state.logged_in:
     st.sidebar.success(f"Halo, {st.session_state.username} ({st.session_state.role})")
-    if st.sidebar.button("Log Out"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.session_state.role = "Belum Login"
-        st.rerun()
+    if st.sidebar.button(txt["logout"]):
+        st.session_state.logged_in = False; st.session_state.username = ""; st.session_state.role = "Belum Login"
+        st.session_state.autofill_user = ""; st.session_state.autofill_pass = ""
+        st.session_state.indeks_tab = 0; st.rerun()
 else:
-    st.sidebar.info("Status: Belum Login")
+    st.sidebar.info(txt["belum_login"])
 
 pilihan_menu = []
 if not st.session_state.logged_in:
     pilihan_menu = ["Log In / Daftar Akun"]
 else:
-    # Siapa pun yang sudah login (User baru maupun Admin) BISA melihat menu utama ini
-    pilihan_menu.append("🎬 Catatan & Dokumentasi Aktif")
-    
-    # Menu khusus ADMIN saja
+    pilihan_menu.append(txt["menu_1"])
     if st.session_state.role == "Admin":
-        pilihan_menu.append("➕ Input & Hapus Catatan")
-        pilihan_menu.append("📜 History Semua Catatan")
-        pilihan_menu.append("👥 Manajemen User & Password")
+        pilihan_menu.append(txt["menu_2"])
+        pilihan_menu.append(txt["menu_3"])
+        pilihan_menu.append(txt["menu_6"]) # Menu Manajemen Tema (Hanya Admin)
+        pilihan_menu.append(txt["menu_4"])
+        pilihan_menu.append(txt["menu_5"])
 
-menu = st.sidebar.selectbox("Pilih Halaman:", pilihan_menu)
+menu = st.sidebar.selectbox(txt["pilih_hal"], pilihan_menu)
 
 # --- HALAMAN 1: LOG IN / DAFTAR AKUN ---
 if menu == "Log In / Daftar Akun":
-    st.title("🔐 Akses Masuk Sistem")
-    st.write("Silakan masuk atau daftar akun baru untuk melihat dokumentasi kegiatan.")
+    st.title(txt["menu_akses"])
+    pilihan_tab = [txt["tab_masuk"], txt["tab_daftar"], txt["tab_lupa"]]
+    tab_terpilih = st.radio(txt["pilih_menu"], pilihan_tab, index=st.session_state.indeks_tab, horizontal=True)
     st.markdown("---")
     
-    tab1, tab2 = st.tabs(["Masuk (Log In)", "Daftar Akun Baru"])
-    
-    with tab1:
-        st.subheader("Silakan Log In")
-        input_user = st.text_input("Username:", key="login_user")
-        input_pass = st.text_input("Password:", type="password", key="login_pass")
-        
-        if st.button("Log In"):
+    if tab_terpilih == txt["tab_masuk"]:
+        st.session_state.indeks_tab = 0
+        input_user = st.text_input(txt["username"], value=st.session_state.autofill_user)
+        input_pass = st.text_input(txt["password"], type="password", value=st.session_state.autofill_pass)
+        if st.button(txt["btn_masuk"]):
             df_users = baca_users()
             user_cocok = df_users[(df_users['username'] == input_user) & (df_users['password'] == input_pass)]
             if not user_cocok.empty:
                 st.session_state.logged_in = True
                 st.session_state.username = input_user
                 st.session_state.role = user_cocok.iloc[0]['role']
-                st.success(f"Berhasil Login! Selamat datang {st.session_state.username}.")
                 st.rerun()
-            else:
-                st.error("Username atau Password salah!")
+            else: st.error(txt["err_login"])
                 
-    with tab2:
-        st.subheader("Form Pendaftaran Akun (Publik)")
-        reg_user = st.text_input("Buat Username (Tanpa Spasi):", key="reg_user")
-        reg_gmail = st.text_input("Masukkan Gmail Anda:", key="reg_gmail")
-        reg_pass = st.text_input("Buat Password Anda:", type="password", key="reg_pass")
-        
-        if st.button("Daftar Sekarang"):
+    elif tab_terpilih == txt["tab_daftar"]:
+        st.session_state.indeks_tab = 1
+        reg_user = st.text_input(txt["buat_user"])
+        reg_gmail = st.text_input(txt["masukan_email"])
+        reg_pass = st.text_input(txt["buat_pass"], type="password")
+        if st.button(txt["btn_daftar"]):
             if reg_user and reg_gmail and reg_pass:
                 df_users = baca_users()
-                if reg_user in df_users['username'].values:
-                    st.error("Username sudah terdaftar! Gunakan nama lain.")
+                if reg_user in df_users['username'].values: st.error(txt["err_user_ada"])
                 else:
-                    # Setiap orang mendaftar otomatis mendapat role 'User' dan BISA langsung melihat catatan aktif setelah login
-                    new_user = {"username": reg_user, "email": reg_gmail, "password": reg_pass, "role": "User"}
-                    df_users = pd.concat([df_users, pd.DataFrame([new_user])], ignore_index=True)
-                    simpan_users(df_users)
-                    st.success("Pendaftaran Berhasil! Silakan masuk menggunakan tab 'Masuk (Log In)'.")
-            else:
-                st.error("Semua kolom pendaftaran wajib diisi!")
+                    df_users = pd.concat([df_users, pd.DataFrame([{"username": reg_user, "email": reg_gmail, "password": reg_pass, "role": "User"}])], ignore_index=True)
+                    simpan_users(df_users); st.success(txt["sukses_daftar"])
+            else: st.error(txt["wajib_isi"])
 
-# --- HALAMAN 2: CATATAN AKTIF (Bisa dilihat oleh User baru & Admin selama Timer masih ada) ---
-elif menu == "🎬 Catatan & Dokumentasi Aktif":
-    st.title("🎬 Galeri Kegiatan & Catatan Aktif")
-    st.write(f"Halo **{st.session_state.username}**, berikut adalah catatan kegiatan internal saat ini:")
-    st.markdown("---")
-    
+    elif tab_terpilih == txt["tab_lupa"]:
+        st.session_state.indeks_tab = 2
+        input_email_pulih = st.text_input(txt["masukan_email"]).strip()
+        if st.button(txt["btn_pulih"]):
+            if input_email_pulih:
+                df_users = baca_users()
+                user_ditemukan = df_users[df_users['email'].str.strip() == input_email_pulih]
+                if not user_ditemukan.empty:
+                    st.session_state.autofill_user = user_ditemukan.iloc[0]['username']
+                    st.session_state.autofill_pass = user_ditemukan.iloc[0]['password']
+                    st.session_state.indeks_tab = 0; st.rerun()
+                else: st.error(txt["err_email_salah"])
+            else: st.warning(txt["pilih_email_dulu"])
+
+# --- HALAMAN 2: CATATAN AKTIF (USER VIEW) ---
+elif menu == txt["menu_1"]:
+    st.title(txt["galeri_title"])
     df_kegiatan = baca_kegiatan()
+    st.markdown(txt["filter_kat"])
     
-    if df_kegiatan.empty:
-        st.info("Belum ada catatan kegiatan saat ini.")
-    else:
-        waktu_sekarang = datetime.now()
-        ada_catatan_aktif = False
+    media_pilihan = st.radio(txt["pilih_jenis"], [txt["semua"], txt["catatan_saja"], txt["foto"], txt["video"]], horizontal=True)
+    pilihan_clean = "Semua"
+    if media_pilihan == txt["catatan_saja"]: pilihan_clean = "Catatan saja"
+    elif media_pilihan == txt["foto"]: pilihan_clean = "Foto"
+    elif media_pilihan == txt["video"]: pilihan_clean = "Video"
+    
+    folder_pilihan = "Semua Folder"
+    if pilihan_clean in ["Foto", "Video"]:
+        list_folder_filter = ambil_daftar_folder(pilihan_clean)
+        folder_pilihan = st.selectbox(f"{txt['pilih_f_internal']} {media_pilihan}:", [txt["semua_folder"]] + list_folder_filter)
         
+    st.markdown("---")
+    if df_kegiatan.empty:
+        st.info(txt["kosong"])
+    else:
+        waktu_sekarang = datetime.now(WIB).replace(tzinfo=None)
+        ada_catatan_aktif = False
         for index, row in df_kegiatan.iterrows():
+            if pilihan_clean != "Semua" and row["Kategori"] != pilihan_clean: continue
+            if pilihan_clean in ["Foto", "Video"] and folder_pilihan != txt["semua_folder"]:
+                if str(row.get("Folder", "Umum")) != folder_pilihan: continue
+                    
             waktu_upload = datetime.strptime(row["Waktu_Upload"], "%Y-%m-%d %H:%M:%S")
-            masa_berlaku_menit = int(row["Masa_Berlaku_Menit"])
-            waktu_kadaluarsa = waktu_upload + timedelta(minutes=masa_berlaku_menit)
+            waktu_kadaluarsa = waktu_upload + timedelta(minutes=int(row["Masa_Berlaku_Menit"]))
             
-            # Tampilkan hanya yang BELUM kadaluarsa
             if waktu_sekarang < waktu_kadaluarsa:
                 ada_catatan_aktif = True
                 sisa_waktu = waktu_kadaluarsa - waktu_sekarang
-                sisa_jam = sisa_waktu.seconds // 3600
-                sisa_menit = (sisa_waktu.seconds % 3600) // 60
+                sisa_hari = sisa_waktu.days; sisa_jam = sisa_waktu.seconds // 3600; sisa_menit = (sisa_waktu.seconds % 3600) // 60
                 
-                with st.container():
+                with st.container(border=True):
                     col1, col2 = st.columns([1, 2])
+                    file_path = row["File Dokumentasi"]
+                    file_tersedia = pd.notna(file_path) and os.path.exists(str(file_path)) and str(file_path) != ""
+                    
                     with col1:
-                         file_path = row["File Dokumentasi"]
-                         if pd.notna(file_path) and os.path.exists(str(file_path)) and str(file_path) != "":
-                             if str(file_path).endswith(('.mp4', '.mov', '.avi')):
-                                 st.video(str(file_path))
-                             else:
-                                 st.image(str(file_path), use_container_width=True)
-                         else:
-                             st.info("📌 Hanya Catatan Teks (Tanpa Media)")
+                         if file_tersedia:
+                             if row["Kategori"] == "Video": st.video(str(file_path))
+                             else: st.image(str(file_path), use_container_width=True)
+                             with open(str(file_path), "rb") as file_data:
+                                 st.download_button(label=f"📥 Download {row['Kategori']}", data=file_data, file_name=os.path.basename(str(file_path)), mime="video/mp4" if row["Kategori"] == "Video" else "image/jpeg", key=f"dl_{row['ID']}")
+                         else: st.info(txt["hanya_teks"])
+                             
                     with col2:
                         st.subheader(row["Nama Kegiatan"])
-                        st.caption(f"📅 Tanggal: {row['Tanggal']} | 🏷️ Kategori: {row['Kategori']}")
-                        st.warning(f"⏳ **Sisa Waktu Tampil:** {sisa_jam} Jam {sisa_menit} Menit lagi (Hingga: {waktu_kadaluarsa.strftime('%H:%M:%S')})")
+                        info_folder = f" | 📁 Folder: **{row.get('Folder', 'Umum')}**" if row["Kategori"] in ["Foto", "Video"] else ""
+                        st.caption(f"📅 {txt['tanggal']}: {row['Tanggal']} | 🏷️ Kategori: **{row['Kategori']}**{info_folder}")
+                        st.write(f"⏳ {txt['sisa_waktu']} {sisa_hari} {txt['hari']} {sisa_jam} {txt['jam']} {sisa_menit} {txt['menit']}")
                         st.write(row["Detail"])
-                    st.markdown("---")
-        
-        if not ada_catatan_aktif:
-            st.info("Saat ini tidak ada catatan aktif yang bisa dilihat. Semua catatan sebelumnya telah melewati batas durasi tampil publik.")
+                        st.markdown(txt["salin_share"])
+                        teks_bagikan = f"📢 *{row['Nama Kegiatan']}*\n📅 {txt['tanggal']}: {row['Tanggal']}\n📝 {txt['detail']}:\n{row['Detail']}"
+                        st.code(teks_bagikan, language="text")
+        if not ada_catatan_aktif: st.info(txt["kosong"])
 
-# --- HALAMAN 3: INPUT & HAPUS CATATAN (KHUSUS ADMIN) ---
-elif menu == "➕ Input & Hapus Catatan":
-    st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
-    tab_input, tab_hapus = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan Permanen"])
+# --- HALAMAN 6: PUSAT TEMA GUI GLOBAL (HANYA ADMIN YANG PUNYA AKSES KONTROL) ---
+elif menu == txt["menu_6"] and st.session_state.role == "Admin":
+    st.title("🎨 Pusat Kontrol Tema GUI Global (Eksklusif Admin)")
+    st.write("Di sini Admin mengendalikan penuh warna website untuk semua pengguna secara terpusat.")
     
+    # Bagian 1: Pilih Tema Aktif untuk Seluruh Website
+    st.markdown("### 📢 Aktifkan Tema Web Saat Ini")
+    df_t_list = baca_tema()
+    semua_tema_tersedia = df_t_list["Nama_Tema"].tolist()
+    tema_saat_ini = ambil_tema_aktif_sistem()
+    
+    idx_default_tema = semua_tema_tersedia.index(tema_saat_ini) if tema_saat_ini in semua_tema_tersedia else 0
+    
+    pilih_tema_admin = st.selectbox("Pilih tema yang ingin langsung diterapkan di HP/Laptop semua user:", semua_tema_tersedia, index=idx_default_tema)
+    
+    if st.button("Terapkan Tema ke Seluruh Website 🌍", type="primary"):
+        set_tema_aktif_sistem(pilih_tema_admin)
+        st.success(f"Sukses! Seluruh sistem web kini resmi menggunakan tema: {pilih_tema_admin}")
+        st.rerun()
+        
+    st.markdown("---")
+    
+    # Bagian 2: Form Pembuatan Tema Kustom oleh Admin
+    st.markdown("### ✏️ Desain & Upload Tema Buatan Sendiri")
+    with st.form("form_buat_tema", clear_on_submit=True):
+        nama_t = st.text_input("Nama Tema Baru (Contoh: Sweet Pink 🌸):")
+        c_bg = st.color_picker("Pilih Warna Latar Belakang (Background):", "#000000")
+        c_side = st.color_picker("Pilih Warna Sidebar Samping:", "#111111")
+        c_txt = st.color_picker("Pilih Warna Teks Utama:", "#ffffff")
+        c_btn = st.color_picker("Pilih Warna Tombol Utama (Accent):", "#ff0000")
+        c_card = st.color_picker("Pilih Warna Kotak Kartu Galeri (Card):", "#222222")
+        
+        if st.form_submit_button("Simpan Tema Baru"):
+            if nama_t:
+                df_t = baca_tema()
+                if nama_t in df_t["Nama_Tema"].values: st.error("Nama tema sudah terdaftar!")
+                else:
+                    new_theme_data = {"Nama_Tema": nama_t, "Bg_Color": c_bg, "Sidebar_Color": c_side, "Text_Color": c_txt, "Button_Color": c_btn, "Card_Bg": c_card}
+                    df_t = pd.concat([df_t, pd.DataFrame([new_theme_data])], ignore_index=True)
+                    simpan_tema(df_t)
+                    set_tema_aktif_sistem(nama_t) # Otomatis langsung aktifkan tema baru
+                    st.success(f"Tema '{nama_t}' berhasil disimpan dan langsung diterapkan secara global!")
+                    st.rerun()
+            else: st.error("Nama Tema wajib diisi!")
+            
+    st.markdown("---")
+    st.markdown("### 🗑️ Daftar & Hapus Tema")
+    st.dataframe(df_t_list, use_container_width=True)
+    
+    if len(df_t_list) > 1:
+        tema_mau_dihapus = st.selectbox("Pilih tema yang ingin dihapus:", semua_tema_tersedia)
+        if st.button("Hapus Tema Permanen"):
+            if tema_mau_dihapus == ambil_tema_aktif_sistem():
+                st.error("Gagal! Anda tidak bisa menghapus tema yang sedang aktif digunakan web saat ini.")
+            else:
+                df_t_baru = df_t_list[df_t_list["Nama_Tema"] != tema_mau_dihapus]
+                simpan_tema(df_t_baru)
+                st.success("Tema kustom berhasil dihapus!"); st.rerun()
+
+# --- HALAMAN ADMIN LAINNYA ---
+elif menu == txt["menu_2"]:
+    st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
+    tab_input, _ = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan"])
     with tab_input:
-        with st.form("form_admin", clear_on_submit=True):
+        kat_terpilih = st.selectbox("1. Pilih Jenis Kategori Terlebih Dahulu:", ["Catatan saja", "Foto", "Video"])
+        with st.form("form_upload_catatan"):
             nama = st.text_input("Nama Kegiatan/Catatan:")
-            kategori = st.selectbox("Kategori:", ["Kegiatan Utama", "Catatan Harian", "Dokumentasi Project"])
-            tanggal = st.date_input("Tanggal Kegiatan:", datetime.now())
+            folder_tujuan = st.selectbox("Folder:", ambil_daftar_folder(kat_terpilih)) if kat_terpilih in ["Foto", "Video"] else "Tidak Butuh Folder"
             detail = st.text_area("Detail Keterangan:")
-            uploaded_file = st.file_uploader("Upload Media (Opsional):", type=["png", "jpg", "jpeg", "mp4"])
-            
-            st.markdown("### ⏱️ Durasi Tampilan Publik")
-            col_j, col_m = st.columns(2)
-            with col_j: durasi_jam = st.number_input("Jam:", min_value=0, max_value=72, value=1)
-            with col_m: durasi_menit = st.number_input("Menit:", min_value=0, max_value=59, value=0)
-            
+            uploaded_file = st.file_uploader("Upload Media:", type=["png", "jpg", "jpeg", "mp4"])
+            durasi_jam = st.number_input("Durasi Tampil (Jam):", min_value=1, value=24)
             if st.form_submit_button("Publikasikan"):
                 if nama:
-                    total_menit = (durasi_jam * 60) + durasi_menit
-                    if total_menit == 0:
-                        st.error("Durasi tidak boleh 0 menit!")
-                    else:
-                        file_path = ""
-                        if uploaded_file is not None:
-                            file_path = os.path.join(FOLDER_FOTO, uploaded_file.name)
-                            with open(file_path, "wb") as f:
-                                f.write(uploaded_file.getbuffer())
-                        
-                        waktu_sekarang_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        id_unik = str(int(datetime.now().timestamp()))
-                        
-                        new_data = {
-                            "ID": [id_unik], "Tanggal": [tanggal.strftime("%Y-%m-%d")],
-                            "Nama Kegiatan": [nama], "Kategori": [kategori], "Detail": [detail],
-                            "File Dokumentasi": [file_path], "Waktu_Upload": [waktu_sekarang_str],
-                            "Masa_Berlaku_Menit": [total_menit], "Oleh_Admin": [st.session_state.username]
-                        }
-                        df_keg = baca_kegiatan()
-                        df_keg = pd.concat([df_keg, pd.DataFrame(new_data)], ignore_index=True)
-                        simpan_kegiatan(df_keg)
-                        st.success("Catatan berhasil disimpan dan dipublikasikan!")
-                        st.rerun()
-                else:
-                    st.error("Nama catatan wajib diisi!")
-                    
-    with tab_hapus:
-        st.subheader("Hapus dari Database")
-        df_keg = baca_kegiatan()
-        if df_keg.empty:
-            st.info("Database kosong.")
-        else:
-            pilihan_hapus = {f"{r['Tanggal']} - {r['Nama Kegiatan']} (ID: {r['ID']})": r['ID'] for idx, r in df_keg.iterrows()}
-            catatan_dipilih = st.selectbox("Pilih catatan untuk dihapus total:", list(pilihan_hapus.keys()))
-            if st.button("Hapus Permanen", type="primary"):
-                df_keg_baru = df_keg[df_keg['ID'].astype(str) != str(pilihan_hapus[catatan_dipilih])]
-                simpan_kegiatan(df_keg_baru)
-                st.success("Berhasil dihapus dari database!")
-                st.rerun()
+                    file_path = ""
+                    if uploaded_file is not None:
+                        file_path = os.path.join(FOLDER_UTAMA_MEDIA, kat_terpilih, folder_tujuan, uploaded_file.name)
+                        with open(file_path, "wb") as f: f.write(uploaded_file.getbuffer())
+                    new_rec = {"ID": str(int(datetime.now(WIB).timestamp())), "Tanggal": datetime.now(WIB).strftime("%Y-%m-%d"), "Nama Kegiatan": nama, "Kategori": kat_terpilih, "Folder": folder_tujuan, "Detail": detail, "File Dokumentasi": file_path, "Waktu_Upload": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"), "Masa_Berlaku_Menit": durasi_jam*60, "Oleh_Admin": st.session_state.username}
+                    df_k = baca_kegiatan(); df_k = pd.concat([df_k, pd.DataFrame([new_rec])], ignore_index=True); simpan_kegiatan(df_k)
+                    st.success("Sukses di-upload!"); st.rerun()
 
-# --- HALAMAN 4: HISTORY CATATAN (KHUSUS ADMIN - MELIHAT SEMUA DATA TERMASUK YANG KADALUARSA) ---
-elif menu == "📜 History Semua Catatan":
-    st.title("📜 Riwayat Seluruh Catatan Kegiatan (Akses Admin)")
-    st.write("Halaman ini menampilkan seluruh catatan yang pernah dibuat, termasuk catatan yang timernya sudah habis di halaman user/publik.")
-    st.markdown("---")
-    
-    df_kegiatan = baca_kegiatan()
-    
-    if df_kegiatan.empty:
-        st.info("Belum ada riwayat catatan di database.")
-    else:
-        # Menampilkan tabel ringkasan data mentah agar admin mudah memantau
-        st.subheader("📊 Tabel Data Riwayat")
-        st.dataframe(df_kegiatan[["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"]], use_container_width=True)
-        st.markdown("---")
-        
-        # Menampilkan bentuk visual list ke bawah
-        st.subheader("📂 Detail Tampilan Riwayat")
-        waktu_sekarang = datetime.now()
-        
-        for index, row in df_kegiatan.iterrows():
-            waktu_upload = datetime.strptime(row["Waktu_Upload"], "%Y-%m-%d %H:%M:%S")
-            masa_berlaku_menit = int(row["Masa_Berlaku_Menit"])
-            waktu_kadaluarsa = waktu_upload + timedelta(minutes=masa_berlaku_menit)
-            
-            # Cek status untuk label
-            if waktu_sekarang >= waktu_kadaluarsa:
-                status_label = "🔴 KADALUARSA (User biasa tidak bisa lihat lagi)"
-            else:
-                status_label = "🟢 AKTIF (Masih tayang di halaman user)"
-                
-            with st.container():
-                st.markdown(f"### **{row['Nama Kegiatan']}**")
-                st.caption(f"🆔 ID: {row['ID']} | 📅 Tanggal: {row['Tanggal']} | 👤 Diinput Oleh: {row['Oleh_Admin']}")
-                st.info(f"📊 **Status:** {status_label} | 🕒 Di-upload pada: {row['Waktu_Upload']} (Masa Tayang: {row['Masa_Berlaku_Menit']} Menit)")
-                st.write(f"**Isi Catatan:** {row['Detail']}")
-                st.markdown("---")
+elif menu == txt["menu_3"]:
+    st.title("📁 Manajemen Folder Kategori")
+    nama_f = st.text_input("Nama Folder Baru:")
+    kat_f = st.selectbox("Kategori:", ["Foto", "Video"])
+    if st.button("Buat Folder"):
+        if nama_f:
+            os.makedirs(os.path.join(PATH_FOTO if kat_f == "Foto" else PATH_VIDEO, nama_f), exist_ok=True)
+            st.success("Folder dibuat!"); st.rerun()
 
-# --- HALAMAN 5: MANAJEMEN USER & PASSWORD ---
-elif menu == "👥 Manajemen User & Password":
-    st.title("👥 Manajemen Pengguna & Intip Password")
-    df_users = baca_users()
-    st.dataframe(df_users[["username", "email", "password", "role"]], use_container_width=True)
-    
-    st.markdown("---")
-    st.subheader("Ubah Role Akses")
-    list_username = df_users["username"].tolist()
-    if "admin" in list_username: list_username.remove("admin") 
-    
-    if len(list_username) == 0:
-        st.info("Belum ada user lain yang mendaftar.")
-    else:
-        pilih_user = st.selectbox("Pilih Username:", list_username)
-        role_baru = st.radio("Pilih Role Baru:", ["User", "Admin"])
-        if st.button("Terapkan Perubahan"):
-            df_users.loc[df_users['username'] == pilih_user, 'role'] = role_baru
-            simpan_users(df_users)
-            st.success(f"Akun '{pilih_user}' sekarang sukses menjadi **{role_baru}**.")
-            st.rerun()
+elif menu == txt["menu_4"]:
+    st.title("📜 History Semua Catatan")
+    st.dataframe(baca_kegiatan(), use_container_width=True)
+
+elif menu == txt["menu_5"]:
+    st.title("👥 Manajemen User & Password")
+    st.dataframe(baca_users(), use_container_width=True)
