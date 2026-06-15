@@ -93,7 +93,7 @@ def set_tema_aktif_sistem(nama_tema):
     with open(STATUS_THEME_FILE, "w", encoding="utf-8") as f:
         f.write(nama_tema)
 
-# --- KAMUS MULTI-BAHASA LENGKAP TANPA DIKORUP (7 BAHASA UTUH) ---
+# --- KAMUS MULTI-BAHASA LENGKAP (7 BAHASA UTUH) ---
 KAMUS = {
     "Indonesia": {
         "navigasi": "🧭 Navigasi", "belum_login": "Status: Belum Login", "logout": "Keluar (Log Out)",
@@ -179,7 +179,7 @@ KAMUS = {
         "form_daftar": "แบบฟอร์มลงทะเบียน", "buat_user": "สร้างชื่อผู้ใช้ (ห้ามเว้นวรรค):", "masukan_email": "กรอก Gmail ของคุณ:",
         "buat_pass": "สร้างรหัสผ่านของคุณ:", "btn_daftar": "ลงทะเบียนตอนนี้", "err_user_ada": "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว!",
         "sukses_daftar": "ลงทะเบียนสำเร็จ! กรุณาเข้าสู่ระบบ", "wajib_isi": "กรุณากรอกข้อมูลให้ครบทุกช่อง!",
-        "bantuan_pulih": "ระบบกู้คืนบัญชีด่วน", "info_pulih": "กรอก Gmail ที่ลงทะเบียนไว้ ระบบจะค้นหาบัญชีของคุณ ย้ายกลับไปที่หน้าล็อกอิน และกรอกข้อมูลให้โดยอัตโนมัติทันที!",
+        "bantuan_pulih": "ระบบกู้คืนบัญชีด่วน", "info_pulih": "กรอก Gmail ที่ลงทะเบียนไว้ ระบบจะค้นหาบัญชีของคุณ ย้ายกลับไปที่หน้าล็อกอิน และกรอกข้อมูลให้โดยอัตมัติทันที!",
         "btn_pulih": "กู้คืนบัญชี & ไปที่หน้าล็อกอิน", "err_email_salah": "Gmail ไม่ถูกต้อง! ไม่พบอีเมลนี้ในระบบ",
         "pilih_email_dulu": "กรุณากรอกอีเมลก่อน!", "galeri_title": "🎬 แกลเลอรีและบันทึกกิจกรรม",
         "filter_kat": "### 🔍 ตัวกรองหมวดหมู่", "pilih_jenis": "เลือกประเภทเอกสาร:", "semua": "ทั้งหมด",
@@ -226,7 +226,7 @@ KAMUS = {
         "hari": "天", "jam": "小時", "menit": "分鐘", "hanya_teks": "📌 僅純文字內容 (無附加多媒體檔案)",
         "salin_share": "##### 🔗 複製文本內容以便分享:", "tanggal": "活動日期", "detail": "詳細說明備註",
         "menu_1": "🎬 動態藝廊與即時筆記", "menu_2": "➕ 新增與刪除動態筆記", "menu_3": "📁 分類資料夾控制中心",
-        "menu_4": "📊 數據主控台與實時日誌監控", "menu_5": "👥 用戶權限與密碼管理中心", "menu_6": "🎨 GUI 全局網頁視覺主題 (管理員專屬)", "pilih_hal": "選擇頁面:"
+        "menu_4": "📊 數據主控台與實時日誌監控", "menu_5": "👥 用戶權限與密碼管理中心", "menu_6": "🎨 GUI 全局網頁視覺主題 (管理員專專屬)", "pilih_hal": "選擇頁面:"
     }
 }
 
@@ -317,6 +317,10 @@ menu = st.sidebar.selectbox(txt["pilih_hal"], pilihan_menu)
 # --- HALAMAN: LOG IN / DAFTAR AKUN ---
 if menu == "Log In / Daftar Akun":
     st.title(txt["menu_akses"])
+    
+    # Tombol Refresh Halaman Akses Masuk
+    if st.button("🔄 Refresh Halaman Ini", key="ref_akses"): st.rerun()
+        
     pilihan_tab = [txt["tab_masuk"], txt["tab_daftar"], txt["tab_lupa"]]
     tab_terpilih = st.radio(txt["pilih_menu"], pilihan_tab, index=st.session_state.indeks_tab, horizontal=True)
     st.markdown("---")
@@ -332,8 +336,6 @@ if menu == "Log In / Daftar Akun":
                 st.session_state.logged_in = True
                 st.session_state.username = input_user
                 st.session_state.role = user_cocok.iloc[0]['role']
-                
-                # CATAT LOG JAM & TANGGAL LOGIN (WIB)
                 catat_log(input_user, "Log In", f"Berhasil masuk sistem sebagai {st.session_state.role}")
                 st.rerun()
             else: st.error(txt["err_login"])
@@ -350,8 +352,6 @@ if menu == "Log In / Daftar Akun":
                 else:
                     df_users = pd.concat([df_users, pd.DataFrame([{"username": reg_user, "email": reg_gmail, "password": reg_pass, "role": "User"}])], ignore_index=True)
                     simpan_users(df_users)
-                    
-                    # CATAT LOG JAM & TANGGAL PENDAFTARAN BARU (WIB)
                     catat_log(reg_user, "Pendaftaran Akun Baru", f"Mendaftar menggunakan Gmail: {reg_gmail}")
                     st.success(txt["sukses_daftar"])
             else: st.error(txt["wajib_isi"])
@@ -374,6 +374,10 @@ if menu == "Log In / Daftar Akun":
 # --- HALAMAN 1: CATATAN AKTIF ---
 elif menu == txt["menu_1"]:
     st.title(txt["galeri_title"])
+    
+    # Tombol Refresh Halaman 1
+    if st.button("🔄 Refresh Halaman Ini", key="ref_h1"): st.rerun()
+        
     df_kegiatan = baca_kegiatan()
     st.markdown(txt["filter_kat"])
     
@@ -434,6 +438,10 @@ elif menu == txt["menu_1"]:
 # --- HALAMAN 2: INPUT & HAPUS CATATAN ---
 elif menu == txt["menu_2"] and st.session_state.role == "Admin":
     st.title("🛠️ Pusat Kontrol Catatan (Akses Admin)")
+    
+    # Tombol Refresh Halaman 2
+    if st.button("🔄 Refresh Halaman Ini", key="ref_h2"): st.rerun()
+        
     tab_input, tab_hapus = st.tabs(["➕ Tambah Catatan Baru", "🗑️ Hapus Catatan"])
     with tab_input:
         kat_terpilih = st.selectbox("1. Pilih Jenis Kategori Terlebih Dahulu:", ["Catatan saja", "Foto", "Video"])
@@ -468,6 +476,10 @@ elif menu == txt["menu_2"] and st.session_state.role == "Admin":
 # --- HALAMAN 3: MANAJEMEN FOLDER KATEGORI ---
 elif menu == txt["menu_3"] and st.session_state.role == "Admin":
     st.title("📁 Manajemen Folder Kategori")
+    
+    # Tombol Refresh Halaman 3
+    if st.button("🔄 Refresh Halaman Ini", key="ref_h3"): st.rerun()
+        
     nama_f = st.text_input("Nama Folder Baru:")
     kat_f = st.selectbox("Kategori:", ["Foto", "Video"])
     if st.button("Buat Folder"):
@@ -479,6 +491,10 @@ elif menu == txt["menu_3"] and st.session_state.role == "Admin":
 # --- HALAMAN 4: MONITORING DATABASE & LOG LIVE JAM MASUK/PENDAFTARAN ---
 elif menu == txt["menu_4"] and st.session_state.role == "Admin":
     st.title(txt["menu_4"])
+    
+    # Tombol Refresh Halaman 4 (Paling berguna buat mantau log masuk secara real-time!)
+    if st.button("🔄 Refresh Halaman Ini", key="ref_h4"): st.rerun()
+        
     st.write("Pantau langsung data fisik server serta jejak rekam login dan registrasi di bawah ini.")
     
     df_keg = baca_kegiatan()
@@ -493,7 +509,6 @@ elif menu == txt["menu_4"] and st.session_state.role == "Admin":
         
     st.markdown("---")
     
-    # LIVE REKAMAN AKTIVITAS LOG (JAM & TANGGAL PENDAFTARAN/LOGIN)
     st.markdown("### ⏱️ Live Log: Riwayat Login & Pendaftaran User")
     st.write("Tabel menampilkan data tanggal & jam pengguna secara riil berurutan dari yang paling baru:")
     
@@ -516,6 +531,10 @@ elif menu == txt["menu_4"] and st.session_state.role == "Admin":
 # --- HALAMAN 5: MANAJEMEN USER & PASSWORD ---
 elif menu == txt["menu_5"] and st.session_state.role == "Admin":
     st.title("👥 Manajemen User & Password (Akses Admin)")
+    
+    # Tombol Refresh Halaman 5
+    if st.button("🔄 Refresh Halaman Ini", key="ref_h5"): st.rerun()
+        
     df_users = baca_users()
     st.markdown("### 📋 Daftar Pengguna Terdaftar")
     st.dataframe(df_users, use_container_width=True)
@@ -549,6 +568,10 @@ elif menu == txt["menu_5"] and st.session_state.role == "Admin":
 # --- HALAMAN 6: PUSAT TEMA GUI GLOBAL ---
 elif menu == txt["menu_6"] and st.session_state.role == "Admin":
     st.title("🎨 Pusat Kontrol Tema GUI Global (Eksklusif Admin)")
+    
+    # Tombol Refresh Halaman 6
+    if st.button("🔄 Refresh Halaman Ini", key="ref_h6"): st.rerun()
+        
     df_t_list = baca_tema()
     semua_tema_tersedia = df_t_list["Nama_Tema"].tolist()
     tema_saat_ini = ambil_tema_aktif_sistem()
