@@ -109,7 +109,7 @@ KAMUS = {
         "filter_kat": "### 🔍 Filter Kategori", "pilih_jenis": "Pilih Jenis Dokumentasi:", "semua": "Semua",
         "catatan_saja": "Catatan saja", "foto": "Foto", "video": "Video", "pilih_f_internal": "📁 Pilih Folder di dalam Kategori",
         "semua_folder": "Semua Folder", "kosong": "Belum ada catatan kegiatan saat ini.", "sisa_waktu": "⏳ **Sisa Waktu Tampil:**",
-        "hari": "Hari", "jam": "Jam", "menit": "Menit", "hanya_teks": "📌 Hanya Catatan Teks (Tidak Ada File)",
+        "hari": "Hari", "jam": "Jam", "menit": "Menit", "detik": "Detik", "permanen": "📌 Bersifat Permanen", "hanya_teks": "📌 Hanya Catatan Teks (Tidak Ada File)",
         "salin_share": "##### 🔗 Salin Catatan untuk Di-share:", "tanggal": "Tanggal", "detail": "Detail Keterangan",
         "menu_1": "🎬 Catatan & Dokumentasi Aktif", "menu_2": "➕ Input & Hapus Catatan", "menu_3": "📁 Manajemen Folder Kategori",
         "menu_4": "📊 Pusat Dashboard & Monitoring Log", "menu_5": "👥 Manajemen User & Password", "menu_6": "🎨 Pusat Tema GUI Global (Admin)", "pilih_hal": "Pilih Halaman:"
@@ -128,7 +128,7 @@ KAMUS = {
         "filter_kat": "### 🔍 Category Filter", "pilih_jenis": "Select Documentation Type:", "semua": "All",
         "catatan_saja": "Notes only", "foto": "Photos", "video": "Videos", "pilih_f_internal": "📁 Select Folder inside Category",
         "semua_folder": "All Folders", "kosong": "No active notes available at the moment.", "sisa_waktu": "⏳ **Remaining Display Time:**",
-        "hari": "Days", "jam": "Hours", "menit": "Minutes", "hanya_teks": "📌 Text Note Only (No File Attached)",
+        "hari": "Days", "jam": "Hours", "menit": "Minutes", "detik": "Seconds", "permanen": "📌 Permanent Post", "hanya_teks": "📌 Text Note Only (No File Attached)",
         "salin_share": "##### 🔗 Copy Note to Share:", "tanggal": "Date", "detail": "Detail Description",
         "menu_1": "🎬 Active Gallery & Notes", "menu_2": "➕ Input & Delete Notes", "menu_3": "📁 Folder Management",
         "menu_4": "📊 Dashboard & Database Monitor", "menu_5": "👥 User & Password Management", "menu_6": "🎨 GUI Global Themes (Admin)", "pilih_hal": "Select Page:"
@@ -147,7 +147,7 @@ KAMUS = {
         "filter_kat": "### 🔍 카테고리 필터", "pilih_jenis": "문서 유형 선택:", "semua": "전체",
         "catatan_saja": "노트만", "foto": "사진", "video": "동영상", "pilih_f_internal": "📁 카테고리 내부 폴더 선택",
         "semua_folder": "모든 폴더", "kosong": "현재 활성화된 노트가 없습니다.", "sisa_waktu": "⏳ **남은 표시 시간:**",
-        "hari": "일", "jam": "時間", "menit": "분", "hanya_teks": "📌 텍스트 노트 전용 (파일 없음)",
+        "hari": "일", "jam": "시간", "menit": "분", "detik": "초", "permanen": "📌 영구 게시물", "hanya_teks": "📌 텍스트 노트 전용 (파일 없음)",
         "salin_share": "##### 🔗 공유할 노트 복사:", "tanggal": "날짜", "detail": "상세 설명",
         "menu_1": "🎬 활성 갤러리 및 노트", "menu_2": "➕ 노트 입력 및 삭제", "menu_3": "📁 폴더 관리",
         "menu_4": "📊 대시보드 및 데이터베이스 모니터링", "menu_5": "👥 사용자 및 비밀번호 관리", "menu_6": "🎨 GUI 글로벌 테마 (관리자)", "pilih_hal": "페이지 선택:"
@@ -166,7 +166,7 @@ KAMUS = {
         "filter_kat": "### 🔍 カテゴリフィルター", "pilih_jenis": "ドキュメント形式の選択:", "semua": "すべて",
         "catatan_saja": "ノートのみ", "foto": "写真", "video": "動画", "pilih_f_internal": "📁 カテゴリ内のフォルダ選択",
         "semua_folder": "すべてのフォルダ", "kosong": "現在、アクティブなノートはありません。", "sisa_waktu": "⏳ **表示残り時間:**",
-        "hari": "日", "jam": "時間", "menit": "分", "hanya_teks": "📌 テキストノートのみ（ファイルなし）",
+        "hari": "日", "jam": "時間", "menit": "分", "detik": "秒", "permanen": "📌 常時表示", "hanya_teks": "📌 テキストノートのみ（ファイルなし）",
         "salin_share": "##### 🔗 共有用ノートをコピー:", "tanggal": "日付", "detail": "詳細説明",
         "menu_1": "🎬 アクティブギャラリー＆ノート", "menu_2": "➕ ノートの追加・削除", "menu_3": "📁 フォルダ管理",
         "menu_4": "📊 ダッシュボード＆データベース監視", "menu_5": "👥 ユーザー＆パスワード管理", "menu_6": "🎨 GUI グローバルテーマ (管理者)", "pilih_hal": "ページ選択:"
@@ -185,7 +185,7 @@ KAMUS = {
         "filter_kat": "### 🔍 ตัวกรองหมวดหมู่", "pilih_jenis": "เลือกประเภทเอกสาร:", "semua": "ทั้งหมด",
         "catatan_saja": "เฉพาะบันทึกข้อความ", "foto": "รูปภาพ", "video": "วิดีโอ", "pilih_f_internal": "📁 เลือกโฟลเดอร์ในหมวดหมู่",
         "semua_folder": "ทุกโฟลเดอร์", "kosong": "ไม่มีบันทึกกิจกรรมในขณะนี้", "sisa_waktu": "⏳ **เวลาที่เหลือในการแสดง:**",
-        "hari": "วัน", "jam": "ชั่วโมง", "menit": "นาที", "hanya_teks": "📌 เฉพาะบันทึกข้อความ (ไม่มีไฟล์แนบ)",
+        "hari": "วัน", "jam": "ชั่วโมง", "menit": "นาที", "detik": "วินาที", "permanen": "📌 โพสต์ถาวร", "hanya_teks": "📌 เฉพาะบันทึกข้อความ (ไม่มีไฟล์แนบ)",
         "salin_share": "##### 🔗 คัดลอกข้อความเพื่อแชร์:", "tanggal": "วันที่", "detail": "รายละเอียด",
         "menu_1": "🎬 แกลเลอรีและบันทึกกิจกรรม", "menu_2": "➕ เพิ่มและลบบันทึก", "menu_3": "📁 จัดการโฟลเดอร์",
         "menu_4": "📊 แดชบอร์ดและระบบตรวจสอบบันทึก", "menu_5": "👥 จัดการผู้ใช้งาน & รหัสผ่าน", "menu_6": "🎨 ปรับแต่งธีมแผงควบคุม (ผู้ดูแล)", "pilih_hal": "เลือกหน้า:"
@@ -204,7 +204,7 @@ KAMUS = {
         "filter_kat": "### 🔍 Filter ng Kategorya", "pilih_jenis": "Pumili ng Uri ng Dokumentasyon:", "semua": "Lahat",
         "catatan_saja": "Mga Tala lamang", "foto": "Mga Larawan", "video": "Mga Video", "pilih_f_internal": "📁 Pumili ng Folder sa loob ng Kategorya",
         "semua_folder": "Lahat ng Folder", "kosong": "Walang aktibong mga tala sa kasalukuyan.", "sisa_waktu": "⏳ **Natitirang Oras ng Display:**",
-        "hari": "Araw", "jam": "Oras", "menit": "Minuto", "hanya_teks": "📌 Tala ng Teksto Lamang (Walang File)",
+        "hari": "Araw", "jam": "Oras", "menit": "Minuto", "detik": "Segundo", "permanen": "📌 Permanenteng Post", "hanya_teks": "📌 Tala ng Teksto Lamang (Walang File)",
         "salin_share": "##### 🔗 Kopyahin ang Tala para Ibahagi:", "tanggal": "Petsa", "detail": "Detalyadong Paglalarawan",
         "menu_1": "🎬 Aktibong Gallery at mga Tala", "menu_2": "➕ Magdagdag at Magbura ng Tala", "menu_3": "📁 Pamamahala ng Folder",
         "menu_4": "📊 Dashboard at Pagsubaybay sa Database", "menu_5": "👥 Pamamahala ng User at Password", "menu_6": "🎨 Pamamahala ng Tema (Admin)", "pilih_hal": "Pumili ng Pahina:"
@@ -223,7 +223,7 @@ KAMUS = {
         "filter_kat": "### 🔍 分類篩選器", "pilih_jenis": "選取檔案類型:", "semua": "顯示全部",
         "catatan_saja": "僅顯示文字筆記", "foto": "相片紀錄", "video": "影片紀錄", "pilih_f_internal": "📁 選擇分類底下的專屬資料夾",
         "semua_folder": "所有資料夾", "kosong": "目前沒有任何有效的動態筆記內容。", "sisa_waktu": "⏳ **剩餘顯示時間:**",
-        "hari": "天", "jam": "小時", "menit": "分鐘", "hanya_teks": "📌 僅純文字內容 (無附加多媒體檔案)",
+        "hari": "天", "jam": "小時", "menit": "分鐘", "detik": "秒", "permanen": "📌 永久告示物", "hanya_teks": "📌 僅純文字內容 (無附加多媒體檔案)",
         "salin_share": "##### 🔗 複製文本內容以便分享:", "tanggal": "活動日期", "detail": "詳細說明備註",
         "menu_1": "🎬 動態藝廊與即時筆記", "menu_2": "➕ 新增與刪除動態筆記", "menu_3": "📁 分類資料夾控制中心",
         "menu_4": "📊 數據主控台與實時日誌監控", "menu_5": "👥 用戶權限與密碼管理中心", "menu_6": "🎨 GUI 全局網頁視覺主題 (管理員專屬)", "pilih_hal": "選擇頁面:"
@@ -417,12 +417,14 @@ elif menu == txt["menu_1"]:
                 if str(row.get("Folder", "Umum")) != folder_pilihan: continue
                     
             waktu_upload = datetime.strptime(row["Waktu_Upload"], "%Y-%m-%d %H:%M:%S")
-            waktu_kadaluarsa = waktu_upload + timedelta(minutes=int(row["Masa_Berlahu_Menit"] if "Masa_Berlahu_Menit" in row else row["Masa_Berlaku_Menit"]))
+            masa_berlaku_input = int(row["Masa_Berlaku_Menit"])
             
-            if waktu_sekarang < waktu_kadaluarsa:
+            # Cek jika konten bersifat permanen (ditandai dengan nilai 99999999)
+            is_permanen = (masa_berlaku_input >= 99999999)
+            waktu_kadaluarsa = waktu_upload + timedelta(minutes=masa_berlaku_input)
+            
+            if is_permanen or (waktu_sekarang < waktu_kadaluarsa):
                 ada_catatan_aktif = True
-                sisa_waktu = waktu_kadaluarsa - waktu_sekarang
-                sisa_hari = sisa_waktu.days; sisa_jam = sisa_waktu.seconds // 3600; sisa_menit = (sisa_waktu.seconds % 3600) // 60
                 
                 with st.container(border=True):
                     col1, col2 = st.columns([1, 2])
@@ -441,7 +443,18 @@ elif menu == txt["menu_1"]:
                         st.subheader(row["Nama Kegiatan"])
                         info_folder = f" | 📁 Folder: **{row.get('Folder', 'Umum')}**" if row["Kategori"] in ["Foto", "Video"] else ""
                         st.caption(f"📅 {txt['tanggal']}: {row['Tanggal']} | 🏷️ Kategori: **{row['Kategori']}**{info_folder}")
-                        st.write(f"⏳ {txt['sisa_waktu']} {sisa_hari} {txt['hari']} {sisa_jam} {txt['jam']} {sisa_menit} {txt['menit']}")
+                        
+                        # Tampilan sisa waktu kustom (Hari, Jam, Menit, Detik) atau Permanen
+                        if is_permanen:
+                            st.write(f"⏳ {txt['sisa_waktu']} {txt['permanen']}")
+                        else:
+                            sisa_waktu = waktu_kadaluarsa - waktu_sekarang
+                            sisa_hari = sisa_waktu.days
+                            sisa_jam = sisa_waktu.seconds // 3600
+                            sisa_menit = (sisa_waktu.seconds % 3600) // 60
+                            sisa_detik = sisa_waktu.seconds % 60
+                            st.write(f"⏳ {txt['sisa_waktu']} {sisa_hari} {txt['hari']} {sisa_jam} {txt['jam']} {sisa_menit} {txt['menit']} {sisa_detik} {txt['detik']}")
+                            
                         st.write(row["Detail"])
                         st.markdown(txt["salin_share"])
                         teks_bagikan = f"📢 *{row['Nama Kegiatan']}*\n📅 {txt['tanggal']}: {row['Tanggal']}\n📝 {txt['detail']}:\n{row['Detail']}"
@@ -464,18 +477,49 @@ elif menu == txt["menu_2"] and st.session_state.role == "Admin":
             folder_tujuan = st.selectbox("Folder:", ambil_daftar_folder(kat_terpilih)) if kat_terpilih in ["Foto", "Video"] else "Tidak Butuh Folder"
             detail = st.text_area("Detail Keterangan:")
             uploaded_file = st.file_uploader("Upload Media:", type=["png", "jpg", "jpeg", "mp4"])
-            durasi_jam = st.number_input("Durasi Tampil (Jam):", min_value=1, value=24)
+            
+            st.markdown("### ⏱️ Atur Durasi Masa Tampil Konten")
+            # Fitur Opsi Permanen
+            set_permanen = st.checkbox("Jadikan Postingan Ini Permanen (Selalu Tampil)", value=False)
+            
+            # Input Hari, Jam, Menit, Detik (Hanya aktif jika permanen tidak dicentang)
+            disabled_inputs = True if set_permanen else False
+            c_day, c_hr, c_min, c_sec = st.columns(4)
+            with c_day: durasi_hari = st.number_input("Hari:", min_value=0, value=1, disabled=disabled_inputs)
+            with c_hr: durasi_jam = st.number_input("Jam:", min_value=0, max_value=23, value=0, disabled=disabled_inputs)
+            with c_min: durasi_menit = st.number_input("Menit:", min_value=0, max_value=59, value=0, disabled=disabled_inputs)
+            with c_sec: durasi_detik = st.number_input("Detik:", min_value=0, max_value=59, value=0, disabled=disabled_inputs)
+            
             if st.form_submit_button("Publikasikan"):
                 if name:
+                    # Menghitung total durasi dalam menit ke sistem database
+                    if set_permanen:
+                        total_menit_simpan = 99999999 # Kode penanda permanen
+                    else:
+                        total_menit_simpan = (durasi_hari * 1440) + (durasi_jam * 60) + durasi_menit + (durasi_detik / 60.0)
+                        if total_menit_simpan <= 0:
+                            total_menit_simpan = 1 # Minimal 1 menit jika admin mengeset 0 semua
+                            
                     file_path = ""
                     if uploaded_file is not None:
                         file_path = os.path.join(FOLDER_UTAMA_MEDIA, kat_terpilih, folder_tujuan, uploaded_file.name)
                         with open(file_path, "wb") as f: f.write(uploaded_file.getbuffer())
-                    new_rec = {"ID": str(int(datetime.now(WIB).timestamp())), "Tanggal": datetime.now(WIB).strftime("%Y-%m-%d"), "Nama Kegiatan": name, "Kategori": kat_terpilih, "Folder": folder_tujuan, "Detail": detail, "File Dokumentasi": file_path, "Waktu_Upload": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"), "Masa_Berlaku_Menit": durasi_jam*60, "Oleh_Admin": st.session_state.username}
+                        
+                    new_rec = {
+                        "ID": str(int(datetime.now(WIB).timestamp())), 
+                        "Tanggal": datetime.now(WIB).strftime("%Y-%m-%d"), 
+                        "Nama Kegiatan": name, 
+                        "Kategori": kat_terpilih, 
+                        "Folder": folder_tujuan, 
+                        "Detail": detail, 
+                        "File Dokumentasi": file_path, 
+                        "Waktu_Upload": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"), 
+                        "Masa_Berlaku_Menit": total_menit_simpan, 
+                        "Oleh_Admin": st.session_state.username
+                    }
                     df_k = baca_kegiatan(); df_k = pd.concat([df_k, pd.DataFrame([new_rec])], ignore_index=True); simpan_kegiatan(df_k)
                     catat_log(st.session_state.username, "Upload Kegiatan", f"Mengupload catatan baru: '{name}'")
                     
-                    # NOTIFIKASI BERHASIL PUBLIKASI KEGIATAN
                     st.success(f"✅ Publikasi Telah Berhasil! Catatan '{name}' aktif sekarang.")
                     st.toast("Catatan berhasil dipublikasikan!", icon="🚀")
                 else:
@@ -491,7 +535,6 @@ elif menu == txt["menu_2"] and st.session_state.role == "Admin":
                 simpan_kegiatan(df_baru_hapus)
                 catat_log(st.session_state.username, "Hapus Kegiatan", f"Menghapus catatan: '{pilihan_hapus}'")
                 
-                # NOTIFIKASI BERHASIL HAPUS KEGIATAN
                 st.success(f"🗑️ Catatan '{pilihan_hapus}' berhasil dihapus dari sistem!")
                 st.toast("Catatan terhapus permanen!", icon="🗑️")
                 st.rerun()
@@ -511,7 +554,6 @@ elif menu == txt["menu_3"] and st.session_state.role == "Admin":
             os.makedirs(os.path.join(PATH_FOTO if kat_f == "Foto" else PATH_VIDEO, nama_f), exist_ok=True)
             catat_log(st.session_state.username, "Buat Folder", f"Membuat folder '{nama_f}' di kategori {kat_f}")
             
-            # NOTIFIKASI BERHASIL BUAT FOLDER
             st.success(f"📁 Folder '{nama_f}' berhasil dibuat di kategori {kat_f}!")
             st.toast("Folder baru sukses dibuat!", icon="📁")
             st.rerun()
@@ -590,7 +632,6 @@ elif menu == txt["menu_5"] and st.session_state.role == "Admin":
                     simpan_users(df_users)
                     catat_log(st.session_state.username, "Edit Akun User", f"Mengubah data profile akun '{user_pilihan}'")
                     
-                    # NOTIFIKASI BERHASIL PERBARUI USER
                     st.success(f"✏️ Perubahan Akun '{user_pilihan}' Telah Berhasil Disimpan!")
                     st.toast("Profil pengguna terupdate!", icon="👤")
                     st.rerun()
@@ -616,7 +657,6 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
         set_tema_aktif_sistem(pilih_tema_admin)
         catat_log(st.session_state.username, "Ganti Tema Global", f"Menerapkan tema '{pilih_tema_admin}' ke seluruh web.")
         
-        # NOTIFIKASI BERHASIL TERAPKAN TEMA
         st.success(f"🎨 Tema '{pilih_tema_admin}' Telah Berhasil Diterapkan Global!")
         st.toast("Tema web resmi berubah!", icon="✨")
         st.rerun()
@@ -639,7 +679,6 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
                     simpan_tema(df_t); set_tema_aktif_sistem(nama_t)
                     catat_log(st.session_state.username, "Buat Tema Kustom", f"Membuat dan menerapkan tema baru '{nama_t}'")
                     
-                    # NOTIFIKASI BERHASIL BUAT TEMA BARU
                     st.success(f"✨ Pembuatan Tema Kustom '{nama_t}' Telah Berhasil!")
                     st.toast("Tema baru aktif!", icon="🎨")
                     st.rerun()
