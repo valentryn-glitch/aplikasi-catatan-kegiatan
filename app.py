@@ -29,6 +29,8 @@ for path in [PATH_FOTO, PATH_VIDEO]:
     if not os.path.exists(os.path.join(path, "Umum")): os.makedirs(os.path.join(path, "Umum"))
 
 # --- SISTEM PENGAMANAN DATABASE MUTLAK ---
+# Logika try-except di bawah ini memastikan jika file sudah ada, 
+# data TIDAK AKAN terhapus atau tertimpa saat Anda update kode.
 try:
     df_cek_kegiatan = pd.read_csv(DATABASE_FILE)
 except Exception:
@@ -200,7 +202,7 @@ KAMUS = {
         "sukses_daftar": "Matagumpay ang pagpaparehistro! Mangyaring mag-log in.", "wajib_isi": "Lahat ng patlang ay kinakailangan!",
         "bantuan_pulih": "Tulong sa Instant na Pagbawi ng Account", "info_pulih": "Ilagay ang iyong nakarehistrong Gmail. Hahanapin ng system ang iyong account, awtomatikong ire-redirect ka sa login page, at i-autofill ang iyong mga kredensyal!",
         "btn_pulih": "Bawiin ang Account & Pumunta sa Log In", "err_email_salah": "Di-wastong Gmail! Ang email na ito ay hindi nakarehistro.",
-        "pilih_email_dulu": "Mangyaring ilay muna ang iyong email!", "galeri_title": "🎬 Aktibong Gallery at mga Tala",
+        "pilih_email_dulu": "Mangyaring ilagay muna ang iyong email!", "galeri_title": "🎬 Aktibong Gallery at mga Tala",
         "filter_kat": "### 🔍 Filter ng Kategorya", "pilih_jenis": "Pumili ng Uri ng Dokumentasyon:", "semua": "Lahat",
         "catatan_saja": "Mga Tala lamang", "foto": "Mga Larawan", "video": "Mga Video", "pilih_f_internal": "📁 Pumili ng Folder sa loob ng Kategorya",
         "semua_folder": "Lahat ng Folder", "kosong": "Walang aktibong mga tala sa kasalukuyan.", "sisa_waktu": "⏳ **Natitirang Oras ng Display:**",
