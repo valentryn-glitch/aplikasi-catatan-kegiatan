@@ -29,22 +29,16 @@ for path in [PATH_FOTO, PATH_VIDEO]:
     if not os.path.exists(os.path.join(path, "Umum")): os.makedirs(os.path.join(path, "Umum"))
 
 # --- SISTEM PENGAMANAN DATABASE MUTLAK ---
+# Logika try-except di bawah ini memastikan jika file sudah ada, 
+# data TIDAK AKAN terhapus atau tertimpa saat Anda update kode.
 try:
     df_cek_kegiatan = pd.read_csv(DATABASE_FILE)
 except Exception:
     df = pd.DataFrame(columns=["ID", "Tanggal", "Nama Kegiatan", "Kategori", "Folder", "Detail", "File Dokumentasi", "Waktu_Upload", "Masa_Berlaku_Menit", "Oleh_Admin"])
     df.to_csv(DATABASE_FILE, index=False)
 
-# PERBAIKAN UTAMA: Akun default admin hanya dibuat jika file tidak ada ATAU filenya kosong kosong sama sekali
 try:
-    if os.path.exists(USER_FILE):
-        df_cek_user = pd.read_csv(USER_FILE)
-        if df_cek_user.empty:
-            df_user = pd.DataFrame([{"username": "admin", "email": "admin@email.com", "password": "admin12345", "role": "Admin"}])
-            df_user.to_csv(USER_FILE, index=False)
-    else:
-        df_user = pd.DataFrame([{"username": "admin", "email": "admin@email.com", "password": "admin12345", "role": "Admin"}])
-        df_user.to_csv(USER_FILE, index=False)
+    df_cek_user = pd.read_csv(USER_FILE)
 except Exception:
     df_user = pd.DataFrame([{"username": "admin", "email": "admin@email.com", "password": "admin12345", "role": "Admin"}])
     df_user.to_csv(USER_FILE, index=False)
@@ -145,7 +139,7 @@ KAMUS = {
         "navigasi": "🧭 탐색", "belum_login": "상태: 로그인하지 않음", "logout": "로그아웃",
         "menu_akses": "🔐 시스템 로그인", "pilih_menu": "접근 메뉴 선택:", "tab_masuk": "로그인",
         "tab_daftar": "새 계정 등록", "tab_lupa": "🔑 아이디 / 비밀번호 찾기", "username": "사용자 이름:",
-        "password": "비密번호:", "btn_masuk": "로그인", "err_login": "사용자 이름 또는 비밀번호가 틀렸습니다!",
+        "password": "비밀번호:", "btn_masuk": "로그인", "err_login": "사용자 이름 또는 비밀번호가 틀렸습니다!",
         "form_daftar": "회원가입 양식", "buat_user": "사용자 이름 생성 (공백 없음):", "masukan_email": "Gmail 입력:",
         "buat_pass": "비밀번호 생성:", "btn_daftar": "지금 가입하기", "err_user_ada": "이미 등록된 사용자 이름입니다!",
         "sukses_daftar": "등록 완료! 로그인해주세요.", "wajib_isi": "모든 필드를 채워야 합니다!",
@@ -208,7 +202,7 @@ KAMUS = {
         "sukses_daftar": "Matagumpay ang pagpaparehistro! Mangyaring mag-log in.", "wajib_isi": "Lahat ng patlang ay kinakailangan!",
         "bantuan_pulih": "Tulong sa Instant na Pagbawi ng Account", "info_pulih": "Ilagay ang iyong nakarehistrong Gmail. Hahanapin ng system ang iyong account, awtomatikong ire-redirect ka sa login page, at i-autofill ang iyong mga kredensyal!",
         "btn_pulih": "Bawiin ang Account & Pumunta sa Log In", "err_email_salah": "Di-wastong Gmail! Ang email na ito ay hindi nakarehistro.",
-        "pilih_email_dulu": "Mangyaring ilay muna ang iyong email!", "galeri_title": "🎬 Aktibong Gallery at mga Tala",
+        "pilih_email_dulu": "Mangyaring ilagay muna ang iyong email!", "galeri_title": "🎬 Aktibong Gallery at mga Tala",
         "filter_kat": "### 🔍 Filter ng Kategorya", "pilih_jenis": "Pumili ng Uri ng Dokumentasyon:", "semua": "Lahat",
         "catatan_saja": "Mga Tala lamang", "foto": "Mga Larawan", "video": "Mga Video", "pilih_f_internal": "📁 Pumili ng Folder sa loob ng Kategorya",
         "semua_folder": "Lahat ng Folder", "kosong": "Walang aktibong mga tala sa kasalukuyan.", "sisa_waktu": "⏳ **Natitirang Oras ng Display:**",
@@ -363,20 +357,16 @@ if menu == "Log In / Daftar Akun":
         reg_pass = st.text_input(txt["buat_pass"], type="password")
         if st.button(txt["btn_daftar"]):
             if reg_user and reg_gmail and reg_pass:
-                if " " in reg_user:
-                    st.error("❌ Username tidak boleh mengandung spasi!")
-                    st.toast("❌ Gagal! Username mengandung spasi.", icon="⚠️")
+                df_users = baca_users()
+                if reg_user in df_users['username'].values: 
+                    st.error(txt["err_user_ada"])
+                    st.toast("❌ Registrasi Gagal! Username sudah digunakan.", icon="⚠️")
                 else:
-                    df_users = baca_users()
-                    if reg_user in df_users['username'].values: 
-                        st.error(txt["err_user_ada"])
-                        st.toast("❌ Registrasi Gagal! Username sudah digunakan.", icon="⚠️")
-                    else:
-                        df_users = pd.concat([df_users, pd.DataFrame([{"username": reg_user, "email": reg_gmail, "password": reg_pass, "role": "User"}])], ignore_index=True)
-                        simpan_users(df_users)
-                        catat_log(reg_user, "Pendaftaran Akun Baru", f"Mendaftar menggunakan Gmail: {reg_gmail}")
-                        st.success(txt["sukses_daftar"])
-                        st.toast("💚 Akun baru berhasil didaftarkan!", icon="💚")
+                    df_users = pd.concat([df_users, pd.DataFrame([{"username": reg_user, "email": reg_gmail, "password": reg_pass, "role": "User"}])], ignore_index=True)
+                    simpan_users(df_users)
+                    catat_log(reg_user, "Pendaftaran Akun Baru", f"Mendaftar menggunakan Gmail: {reg_gmail}")
+                    st.success(txt["sukses_daftar"])
+                    st.toast("💚 Akun baru berhasil didaftarkan!", icon="💚")
             else: 
                 st.error(txt["wajib_isi"])
                 st.toast("⚠️ Registrasi Gagal! Kolom tidak boleh kosong.", icon="🛑")
@@ -630,9 +620,7 @@ elif menu == txt["menu_5"] and st.session_state.role == "Admin":
     st.markdown("### 📋 Daftar Pengguna Terdaftar")
     st.dataframe(df_users, use_container_width=True)
     st.markdown("---")
-    
-    # PERBAIKAN TOTAL: Form Modifikasi Username, Gmail, Password, & Hak Akses
-    st.markdown("### ✏️ Edit Data Akun (Ubah Username, Gmail, Password & Role)")
+    st.markdown("### ✏️ Edit Data Akun (Gmail, Password & Role)")
     
     list_username = df_users["username"].tolist()
     user_pilihan = st.selectbox("Pilih Username yang Akan Diedit:", list_username)
@@ -640,55 +628,27 @@ elif menu == txt["menu_5"] and st.session_state.role == "Admin":
     if user_pilihan:
         data_user_lama = df_users[df_users["username"] == user_pilihan].iloc[0]
         with st.form("form_edit_user"):
-            st.info(f"Mengedit Akun Asli: **{user_pilihan}**")
-            
-            # Sekarang kolom username bisa di-input ulang untuk diganti nilainya
-            input_user_baru = st.text_input("Ubah Username (Tanpa Spasi):", value=str(data_user_lama["username"])).strip()
+            st.info(f"Mengedit Akun: **{user_pilihan}**")
             input_gmail_baru = st.text_input("Ubah Gmail:", value=str(data_user_lama["email"]))
             input_pass_baru = st.text_input("Ubah Password:", value=str(data_user_lama["password"]))
-            
             role_sekarang = data_user_lama["role"]
             idx_role = 0 if role_sekarang == "Admin" else 1
             input_role_baru = st.selectbox("Ubah Hak Akses (Role):", ["Admin", "User"], index=idx_role)
             
-            if st.form_submit_button("Simpan Perubahan Akun Secara Permanen"):
-                if input_user_baru and input_gmail_baru and input_pass_baru:
-                    if " " in input_user_baru:
-                        st.error("❌ Perubahan Gagal! Username baru dilarang memakai spasi.")
-                        st.toast("❌ Gagal! Username ada spasi.", icon="🛑")
-                    else:
-                        # Cek bentrokan jika mengubah username ke nama orang lain yang sudah ada
-                        username_terpakai = df_users[df_users["username"] == input_user_baru]
-                        if input_user_baru != user_pilihan and not username_terpakai.empty:
-                            st.error(f"❌ Gagal! Username '{input_user_baru}' sudah dimiliki oleh akun lain.")
-                            st.toast("❌ Username tujuan bentrok!", icon="🛑")
-                        else:
-                            # 1. Update data pada database user
-                            df_users.loc[df_users["username"] == user_pilihan, "username"] = input_user_baru
-                            df_users.loc[df_users["username"] == input_user_baru, "email"] = input_gmail_baru
-                            df_users.loc[df_users["username"] == input_user_baru, "password"] = input_pass_baru
-                            df_users.loc[df_users["username"] == input_user_baru, "role"] = input_role_baru
-                            simpan_users(df_users)
-                            
-                            # 2. Sinkronisasi data ke database kegiatan agar data kontributor pembuat postingan tidak pecah
-                            df_kegiatan_sync = baca_kegiatan()
-                            if not df_kegiatan_sync.empty:
-                                df_kegiatan_sync.loc[df_kegiatan_sync["Oleh_Admin"] == user_pilihan, "Oleh_Admin"] = input_user_baru
-                                simpan_kegiatan(df_kegiatan_sync)
-                            
-                            # 3. Jika admin mengubah akunnya sendiri yang sedang dipakai login, perbarui session state-nya agar tidak otomatis logout
-                            if st.session_state.username == user_pilihan:
-                                st.session_state.username = input_user_baru
-                                st.session_state.role = input_role_baru
-                                
-                            catat_log(st.session_state.username, "Edit Akun Masal", f"Berhasil mengubah profil akun '{user_pilihan}' menjadi '{input_user_baru}'")
-                            
-                            st.success(f"✏️ Perubahan Akun '{user_pilihan}' Berhasil Disimpan!")
-                            st.toast("👤 Akun & Hak Akses berhasil diperbarui!", icon="👤")
-                            st.rerun()
+            if st.form_submit_button("Simpan Perubahan Akun"):
+                if input_gmail_baru and input_pass_baru:
+                    df_users.loc[df_users["username"] == user_pilihan, "email"] = input_gmail_baru
+                    df_users.loc[df_users["username"] == user_pilihan, "password"] = input_pass_baru
+                    df_users.loc[df_users["username"] == user_pilihan, "role"] = input_role_baru
+                    simpan_users(df_users)
+                    catat_log(st.session_state.username, "Edit Akun User", f"Mengubah data profile akun '{user_pilihan}'")
+                    
+                    st.success(f"✏️ Perubahan Akun '{user_pilihan}' Telah Berhasil Disimpan!")
+                    st.toast("👤 Profil pengguna terupdate!", icon="👤")
+                    st.rerun()
                 else: 
-                    st.error("❌ Pembaruan Gagal! Seluruh kolom input wajib diisi.")
-                    st.toast("❌ Kolom tidak boleh kosong!", icon="🛑")
+                    st.error("❌ Pembaruan Gagal! Gmail dan Password tidak boleh dikosongkan.")
+                    st.toast("❌ Data tidak boleh kosong!", icon="🛑")
 
 # --- HALAMAN 6: PUSAT TEMA GUI GLOBAL ---
 elif menu == txt["menu_6"] and st.session_state.role == "Admin":
@@ -734,7 +694,7 @@ elif menu == txt["menu_6"] and st.session_state.role == "Admin":
                 else:
                     df_t = pd.concat([df_t, pd.DataFrame([{"Nama_Tema": nama_t, "Bg_Color": c_bg, "Sidebar_Color": c_side, "Text_Color": c_txt, "Button_Color": c_btn, "Card_Bg": c_card}])], ignore_index=True)
                     simpan_tema(df_t); set_tema_aktif_sistem(nama_t)
-                    catat_log(st.session_state.username, "Ref Tema Kustom", f"Membuat tema '{nama_t}'")
+                    catat_log(st.session_state.username, "Buat Tema Kustom", f"Membuat dan menerapkan tema baru '{nama_t}'")
                     
                     st.success(f"✨ Pembuatan Tema Kustom '{nama_t}' Telah Berhasil!")
                     st.toast("🎨 Tema baru aktif!", icon="🎨")
